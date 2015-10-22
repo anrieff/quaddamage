@@ -26,3 +26,8 @@
 *.exe
 *.out
 *.app
+
+# Local copy of the Code::Blocks project
+qdamage.cbp
+qdamage.layout
+qdamage.depend
