@@ -31,17 +31,10 @@
 		<Compiler>
 			<Add option="-std=c++11" />
 			<Add option="-Wall" />
-			<Add directory="L:/SDL-1.2.15/include" />
+			<Add option="`sdl-config --cflags`" />
 		</Compiler>
 		<Linker>
-			<Add library="mingw32" />
-			<Add library="SDLmain" />
-			<Add library="SDL.dll" />
-			<Add library="user32" />
-			<Add library="gdi32" />
-			<Add library="winmm" />
-			<Add library="dxguid" />
-			<Add directory="L:/SDL-1.2.15/lib" />
+			<Add option="`sdl-config --libs`" />
 		</Linker>
 		<Unit filename="src/main.cpp" />
 		<Extensions>
