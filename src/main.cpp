@@ -28,7 +28,6 @@ struct Color {
 
 	Uint32 toRGB32(void) const
 	{
-		screen->format->
 		return quantize(b) | (quantize(g) << 8) | (quantize(r) << 16);
 	}
 };
@@ -56,7 +55,6 @@ void render()
 {
 	int centerX = 100;
 	int centerY = 200;
-	int radius = 50;
 	// p = (centerX, centerY) + (cos(angle)*r, sin(angle)*r)
 	for (float angle = 0; angle < 360; angle += 0.5) {
 		for (int radius = 0; radius < 50; radius++)
