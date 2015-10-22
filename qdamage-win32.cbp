@@ -31,7 +31,7 @@
 		<Compiler>
 			<Add option="-std=c++11" />
 			<Add option="-Wall" />
-			<Add directory="C:/develop/SDK/SDL-1.2.15/include" />
+			<Add directory="L:/SDL-1.2.15/include" />
 		</Compiler>
 		<Linker>
 			<Add library="mingw32" />
@@ -41,9 +41,8 @@
 			<Add library="gdi32" />
 			<Add library="winmm" />
 			<Add library="dxguid" />
-			<Add directory="C:/develop/SDK/SDL-1.2.15/lib" />
+			<Add directory="L:/SDL-1.2.15/lib" />
 		</Linker>
-		<Unit filename="cb.bmp" />
 		<Unit filename="main.cpp" />
 		<Extensions>
 			<code_completion />
