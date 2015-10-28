@@ -23,6 +23,32 @@
  */
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
+#include "vector.h"
 
+struct IntersectionInfo {
+	Vector ip;
+	Vector normal;
+	double distance;
+	double u, v;
+};
+
+class Geometry {
+public:
+	virtual bool intersect(const Ray& ray, IntersectionInfo& info) = 0;
+	virtual ~Geometry() {}
+};
+
+class Plane: public Geometry {
+public:
+	double y;
+	bool intersect(const Ray& ray, IntersectionInfo& info);
+};
+
+struct Shader;
+
+struct Node {
+	Geometry* geom;
+	Shader* shader;
+};
 
 #endif // __GEOMETRY_H__

@@ -24,4 +24,21 @@
 #ifndef __CAMERA_H__
 #define __CAMERA_H__
 
+#include "vector.h"
+#include "matrix.h"
+
+class Camera {
+	Vector topLeft, topRight, bottomLeft;
+	Matrix rotation;
+public:
+	Vector position;
+	double yaw, pitch, roll; //!< in degrees
+	double aspectRatio;
+	double fov;              //!< in degrees
+	
+	void frameBegin();
+	
+	Ray getScreenRay(double xScreen, double yScreen);
+};
+
 #endif // __CAMERA_H__

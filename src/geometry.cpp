@@ -21,3 +21,24 @@
  * @File geometry.cpp
  * @Brief Contains implementations of geometry primitives' intersection methods.
  */
+#include "geometry.h"
+
+bool Plane::intersect(const Ray& ray, IntersectionInfo& info)
+{
+	if (ray.start.y > this->y && ray.dir.y >= 0)
+		return false;
+	if (ray.start.y < this->y && ray.dir.y <= 0)
+		return false;
+	
+	// this->y = 1
+	// ray.start.y = 6
+	// ray.dir.y = -1
+	// (1 - 6) / -1 = -5 / -1 = 5
+	double scaleFactor = (this->y - ray.start.y) / ray.dir.y;
+	info.ip = ray.start + ray.dir * scaleFactor;
+	info.distance = scaleFactor;
+	info.normal = Vector(0, ray.start.y > this->y ? 1 : -1, 0);
+	info.u = info.ip.x;
+	info.v = info.ip.z;
+	return true;
+}

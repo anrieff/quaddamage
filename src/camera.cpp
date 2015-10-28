@@ -21,3 +21,50 @@
  * @File camera.cpp
  * @Brief Implementation of the raytracing camera.
  */
+#include "camera.h"
+#include "matrix.h"
+#include "util.h"
+#include "sdl.h"
+
+void Camera::frameBegin()
+{	
+	double x2d = aspectRatio, y2d = +1;
+	
+	double wantedAngle = toRadians(fov/2);
+	double wantedLength = tan(wantedAngle);
+	double hypotLength = sqrt(sqr(aspectRatio) + sqr(1.0));
+	double scaleFactor = wantedLength / hypotLength;
+	
+	x2d *= scaleFactor*1.5;
+	y2d *= scaleFactor*1.5;
+	
+	topLeft = Vector(-x2d, y2d, 1);
+	topRight = Vector(x2d, y2d, 1);
+	bottomLeft = Vector(-x2d, -y2d, 1);
+	
+	rotation = 
+		rotationAroundZ(toRadians(roll)) *
+		rotationAroundX(toRadians(pitch)) *
+		rotationAroundY(toRadians(yaw));
+	
+	topLeft *= rotation;
+	topRight *= rotation;
+	bottomLeft *= rotation;
+	
+	topLeft += this->position;
+	topRight += this->position;
+	bottomLeft += this->position;
+}
+
+Ray Camera::getScreenRay(double xScreen, double yScreen)
+{
+	Vector throughPoint = 
+		topLeft + (topRight - topLeft) * (xScreen / frameWidth())
+				+ (bottomLeft - topLeft) * (yScreen / frameHeight());
+	
+	Ray ray;
+	ray.dir = throughPoint - this->position;
+	ray.dir.normalize();
+	ray.start = this->position;
+	return ray;
+}

@@ -24,4 +24,20 @@
 #ifndef __SHADING_H__
 #define __SHADING_H__
 
+#include "geometry.h"
+#include "color.h"
+
+class Shader {
+public:
+	virtual Color shade(const Ray& ray, const IntersectionInfo& info) = 0;
+	virtual ~Shader() {}
+};
+
+class CheckerShader: public Shader {
+public:
+	Color color1, color2;
+	Color shade(const Ray& ray, const IntersectionInfo& info);
+	
+};
+
 #endif // __SHADING_H__

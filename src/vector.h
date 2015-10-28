@@ -59,6 +59,12 @@ struct Vector {
 	{
 		scale(multiplier);
 	}
+	void operator += (const Vector& other)
+	{
+		this->x += other.x;
+		this->y += other.y;
+		this->z += other.z;
+	}
 	void operator /= (double divider)
 	{
 		scale(1.0 / divider);
@@ -122,5 +128,10 @@ inline Vector operator / (const Vector& a, double divider)
 	double multiplier = 1.0 / divider;
 	return Vector(a.x * multiplier, a.y * multiplier, a.z * multiplier);
 }
+
+struct Ray {
+	Vector start;
+	Vector dir; //!< normed!
+};
 
 #endif // __VECTOR3D_H__

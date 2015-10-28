@@ -21,3 +21,24 @@
  * @File shading.cpp
  * @Brief Contains implementations of shader classes
  */
+#include "shading.h"
+
+extern Vector lightPos;
+extern double lightIntensity;
+
+Color CheckerShader::shade(const Ray& ray, const IntersectionInfo& info)
+{
+	int x = (int) floor(info.u / 5.0);
+	int y = (int) floor(info.v / 5.0);
+	
+	Color checkerColor = ((x + y) % 2 == 0) ? color1 : color2;
+	
+	Vector v1 = info.normal;
+	Vector v2 = lightPos - info.ip;
+	double distanceToLightSqr = v2.lengthSqr();
+	v2.normalize();
+	double lambertCoeff = dot(v1, v2);
+	double attenuationCoeff = 1.0 / distanceToLightSqr;
+	
+	return checkerColor * lambertCoeff * attenuationCoeff * lightIntensity;
+}
