@@ -33,11 +33,35 @@ public:
 	virtual ~Shader() {}
 };
 
-class CheckerShader: public Shader {
+class Texture {
+public:
+	virtual Color sample(const IntersectionInfo& info) = 0;
+	virtual ~Texture() {}
+};
+
+class CheckerTexture: public Texture {
 public:
 	Color color1, color2;
-	Color shade(const Ray& ray, const IntersectionInfo& info);
-	
+	double scaling;
+	CheckerTexture() { color1.makeZero(); color2.makeZero(); scaling = 1; }
+	virtual Color sample(const IntersectionInfo& info);
+};
+
+class Lambert: public Shader {
+public:
+	Color color;
+	Texture* texture;
+	Lambert() { color.makeZero(); texture = NULL; }
+	Color shade(const Ray& ray, const IntersectionInfo& info);	
+};
+
+class Phong: public Shader {
+public:
+	Color color;
+	Texture* texture;
+	double specularMultiplier;
+	double specularExponent;
+	Color shade(const Ray& ray, const IntersectionInfo& info);	
 };
 
 #endif // __SHADING_H__

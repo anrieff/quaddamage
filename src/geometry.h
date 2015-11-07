@@ -24,12 +24,16 @@
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
 #include "vector.h"
+#include <vector>
 
+
+class Geometry;
 struct IntersectionInfo {
 	Vector ip;
 	Vector normal;
 	double distance;
 	double u, v;
+	Geometry* geom;
 };
 
 class Geometry {
@@ -42,6 +46,48 @@ class Plane: public Geometry {
 public:
 	double y;
 	bool intersect(const Ray& ray, IntersectionInfo& info);
+};
+
+class Sphere: public Geometry {
+public:
+	Vector O;
+	double R;
+	
+	bool intersect(const Ray& ray, IntersectionInfo& info);
+};
+
+class Cube: public Geometry {
+	bool intersectSide(double level, double start, double dir, const Ray& ray, const Vector& normal, IntersectionInfo& info);
+public:
+	Vector O;
+	double halfSide;
+
+	bool intersect(const Ray& ray, IntersectionInfo& info);
+};
+
+class CsgOp: public Geometry {
+	void findAllIntersections(Ray ray, Geometry* geom, std::vector<IntersectionInfo>& ips);
+public:
+	Geometry *left, *right;
+	
+	virtual bool boolOp(bool inA, bool inB) = 0;
+	
+	bool intersect(const Ray& ray, IntersectionInfo& info);
+};
+
+class CsgAnd: public CsgOp {
+public:
+	bool boolOp(bool inA, bool inB) { return inA && inB; }
+};
+
+class CsgPlus: public CsgOp {
+public:
+	bool boolOp(bool inA, bool inB) { return inA || inB; }
+};
+
+class CsgMinus: public CsgOp {
+public:
+	bool boolOp(bool inA, bool inB) { return inA && !inB; }
 };
 
 struct Shader;

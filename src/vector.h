@@ -129,6 +129,14 @@ inline Vector operator / (const Vector& a, double divider)
 	return Vector(a.x * multiplier, a.y * multiplier, a.z * multiplier);
 }
 
+inline Vector reflect(Vector in, const Vector& norm)
+{
+	in.normalize();
+	in += 2 * norm * dot(norm, -in);
+	in.normalize();
+	return in;
+}
+
 struct Ray {
 	Vector start;
 	Vector dir; //!< normed!

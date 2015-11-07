@@ -23,22 +23,66 @@
  */
 #include "shading.h"
 
+bool visibilityCheck(const Vector& start, const Vector& end);
+
 extern Vector lightPos;
 extern double lightIntensity;
+extern Color ambientLight;
 
-Color CheckerShader::shade(const Ray& ray, const IntersectionInfo& info)
+Color CheckerTexture::sample(const IntersectionInfo& info)
 {
-	int x = (int) floor(info.u / 5.0);
-	int y = (int) floor(info.v / 5.0);
+	int x = (int) floor(info.u * scaling / 5.0);
+	int y = (int) floor(info.v * scaling / 5.0);
 	
 	Color checkerColor = ((x + y) % 2 == 0) ? color1 : color2;
+	return checkerColor;
+}
+
+double getLightContrib(const IntersectionInfo& info)
+{
+	double distanceToLightSqr = (info.ip - lightPos).lengthSqr();
+
+	if (!visibilityCheck(info.ip + info.normal * 1e-6, lightPos)) {
+		return 0;
+	} else {
+		return lightIntensity / distanceToLightSqr;
+	}
+}
+
+Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
+{
+	Color diffuse = texture ? texture->sample(info) : this->color;
 	
 	Vector v1 = info.normal;
 	Vector v2 = lightPos - info.ip;
-	double distanceToLightSqr = v2.lengthSqr();
 	v2.normalize();
 	double lambertCoeff = dot(v1, v2);
-	double attenuationCoeff = 1.0 / distanceToLightSqr;
 	
-	return checkerColor * lambertCoeff * attenuationCoeff * lightIntensity;
+	return ambientLight * diffuse
+		+ diffuse * lambertCoeff * getLightContrib(info);
+	
+}
+
+Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
+{
+	Color diffuse = texture ? texture->sample(info) : this->color;
+	
+	Vector v1 = info.normal;
+	Vector v2 = lightPos - info.ip;
+	v2.normalize();
+	double lambertCoeff = dot(v1, v2);
+	double fromLight = getLightContrib(info);
+	
+	Vector r = reflect(info.ip - lightPos, info.normal);
+	Vector toCamera = -ray.dir;
+	double cosGamma = dot(toCamera, r);
+	double phongCoeff;
+	if (cosGamma > 0)
+		phongCoeff = pow(cosGamma, specularExponent);
+	else
+		phongCoeff = 0;
+	
+	return ambientLight * diffuse
+		+ diffuse * lambertCoeff * fromLight
+		+ Color(1, 1, 1) * (phongCoeff * specularMultiplier * fromLight);
 }
