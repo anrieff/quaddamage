@@ -41,6 +41,7 @@ bool Plane::intersect(const Ray& ray, IntersectionInfo& info)
 	info.ip = ray.start + ray.dir * scaleFactor;
 	info.distance = scaleFactor;
 	info.normal = Vector(0, ray.start.y > this->y ? 1 : -1, 0);
+	if (fabs(info.ip.x) > limit || fabs(info.ip.z) > limit) return false;
 	info.u = info.ip.x;
 	info.v = info.ip.z;
 	info.geom = this;
@@ -65,26 +66,22 @@ bool Sphere::intersect(const Ray& ray, IntersectionInfo& info)
 	p2 = (-B + sqrt(discr)) / (2 * A);
 	double p;
 	// p1 <= p2
-	bool backNormal = false;
 	if (p1 > 0) p = p1;
-	else if (p2 > 0) {
+	else if (p2 > 0)
 		p = p2;
-		backNormal = true;
-	}
 	else return false;
 	
 	info.distance = p;
 	info.ip = ray.start + ray.dir * p;
 	info.normal = info.ip - O;
 	info.normal.normalize();
-	if (backNormal) info.normal = -info.normal;
 	info.u = info.v = 0;
 	Vector posRelative = info.ip - O;
 	info.u = atan2(posRelative.z, posRelative.x);
 	info.v = asin(posRelative.y / R);
 	// remap [(-PI..PI)x(-PI/2..PI/2)] -> [(0..1)x(0..1)]
 	info.u = (info.u + PI) / (2*PI);
-	info.v = (info.v + PI/2) / (PI);
+	info.v = -(info.v + PI/2) / (PI);
 	info.geom = this;
 	return true;
 }

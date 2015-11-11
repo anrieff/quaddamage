@@ -8,6 +8,7 @@
 #include "camera.h"
 #include "geometry.h"
 #include "shading.h"
+#include "environment.h"
 using std::vector;
 
 #define COUNT_OF(arr) int((sizeof(arr)) / sizeof(arr[0]))
@@ -29,28 +30,32 @@ Vector lightPos;
 double lightIntensity;
 Color ambientLight;
 bool wantAA = true;
+Environment* environment;
+int maxRaytraceDepth = 10;
 
 void setupScene()
 {
 	ambientLight = Color(1, 1, 1) * 0.1;
-	camera.position = Vector(35, 60, -100);
+	camera.position = Vector(0, 60, -120);
 	camera.yaw = 0;
 	camera.pitch = -30;
 	camera.roll = 0;
-	camera.fov = 90;
+	camera.fov = 60;
 	camera.aspectRatio = float(frameWidth()) / float(frameHeight());
 	plane.y = 1;
+	plane.limit = 100;
 	plane2.y = 200;
 	checker.color1 = Color(0, 0, 0.5);
 	checker.color2 = Color(1, 0.5, 0);
 	ceilingTex.color1 = Color(0.5, 0.5, 0.5);
 	ceilingTex.color2 = Color(0.5, 0.5, 0.5);
-	pod.texture = &checker;
+	Texture* plochki = new BitmapTexture("data/floor.bmp", 100);
+	pod.texture = plochki;
 	pod.specularExponent = 20;
 	pod.specularMultiplier = 5.3;
 	ceiling.texture = &ceilingTex;
 	nodes.push_back({ &plane, &pod });
-	nodes.push_back({ &plane2, &ceiling });
+	//nodes.push_back({ &plane2, &ceiling });
 	lightPos = Vector(120, 180, 0);
 	lightIntensity = 45000.0;
 	
@@ -65,16 +70,20 @@ void setupScene()
 	blue.color1 = Color(0.2, 0.4, 1.0);
 	blue.color2 = Color(0.4, 0.4, 0.4);
 	blue.scaling = 2;
-	ball.texture = &blue;
+	
+	ball.texture = new BitmapTexture("data/world.bmp");
 	ball.specularExponent = 200;
 	ball.specularMultiplier = 0.5;
-	nodes.push_back({ csg, &ball });
+	nodes.push_back({ &s1, new Refr(1.3, 0.9 ) });
+	
+	environment = new CubemapEnvironment("data/env/forest");
 	
 	camera.frameBegin();
 }
 
 Color raytrace(Ray ray)
 {
+	if (ray.depth > maxRaytraceDepth) return Color(0, 0, 0);
 	Node* closestNode = NULL;
 	double closestDist = INF;
 	IntersectionInfo closestInfo;
@@ -89,9 +98,10 @@ Color raytrace(Ray ray)
 		}
 	}
 	// check if we hit the sky:
-	if (closestNode == NULL)
-		return Color(0, 0, 0); // TODO(vesko): return background color
-	else
+	if (closestNode == NULL) {
+		if (environment) return environment->getEnvironment(ray.dir);
+		else return Color(0, 0, 0);
+	} else
 		return closestNode->shader->shade(ray, closestInfo);
 }
 

@@ -47,6 +47,16 @@ public:
 	virtual Color sample(const IntersectionInfo& info);
 };
 
+class Bitmap;
+class BitmapTexture: public Texture {
+	Bitmap* bitmap;
+	double scaling;
+public:
+	BitmapTexture(const char* filename, double scaling = 1.0);
+	~BitmapTexture();
+	Color sample(const IntersectionInfo& info);
+};
+
 class Lambert: public Shader {
 public:
 	Color color;
@@ -61,6 +71,22 @@ public:
 	Texture* texture;
 	double specularMultiplier;
 	double specularExponent;
+	Color shade(const Ray& ray, const IntersectionInfo& info);	
+};
+
+class Refl: public Shader {
+public:
+	double multiplier;
+	Refl(double mult = 0.99): multiplier(mult) {}
+	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	
+};
+
+class Refr: public Shader {
+public:
+	double ior_ratio;
+	double multiplier;
+	Refr(double ior, double mult = 0.99): ior_ratio(ior), multiplier(mult) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
 };
 

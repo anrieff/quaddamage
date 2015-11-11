@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string>
+
 #include "constants.h"
 
 inline double signOf(double x) { return x > 0 ? +1 : -1; }
@@ -51,5 +52,8 @@ public:
         FileRAII(const FileRAII&) = delete;
         FileRAII& operator = (const FileRAII&) = delete;
 };
+
+bool fileExists(const char* fn);
+
 
 #endif // __UTIL_H__

@@ -45,6 +45,8 @@ public:
 class Plane: public Geometry {
 public:
 	double y;
+	double limit;
+	Plane() { y = 0; limit = 1e99; }
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
 

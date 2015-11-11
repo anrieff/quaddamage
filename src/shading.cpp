@@ -22,6 +22,7 @@
  * @Brief Contains implementations of shader classes
  */
 #include "shading.h"
+#include "bitmap.h"
 
 bool visibilityCheck(const Vector& start, const Vector& end);
 
@@ -53,7 +54,7 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v1 = info.normal;
+	Vector v1 = faceforward(ray.dir, info.normal);
 	Vector v2 = lightPos - info.ip;
 	v2.normalize();
 	double lambertCoeff = dot(v1, v2);
@@ -67,7 +68,7 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v1 = info.normal;
+	Vector v1 = faceforward(ray.dir, info.normal);
 	Vector v2 = lightPos - info.ip;
 	v2.normalize();
 	double lambertCoeff = dot(v1, v2);
@@ -85,4 +86,69 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 	return ambientLight * diffuse
 		+ diffuse * lambertCoeff * fromLight
 		+ Color(1, 1, 1) * (phongCoeff * specularMultiplier * fromLight);
+}
+
+BitmapTexture::BitmapTexture(const char* filename, double scaling)
+{
+	bitmap = new Bitmap;
+	bitmap->loadImage(filename);
+	this->scaling = 1/scaling;
+}
+
+BitmapTexture::~BitmapTexture() { delete bitmap; }
+
+Color BitmapTexture::sample(const IntersectionInfo& info)
+{
+	int x = (int) floor(info.u * scaling * bitmap->getWidth());
+	int y = (int) floor(info.v * scaling * bitmap->getHeight());
+	// 0 <= x < bitmap.width
+	// 0 <= y < bitmap.height
+	x = (x % bitmap->getWidth());
+	y = (y % bitmap->getHeight());
+	if (x < 0) x += bitmap->getWidth();
+	if (y < 0) y += bitmap->getHeight();
+	
+	return bitmap->getPixel(x, y);
+}
+
+extern Color raytrace(Ray ray);
+
+Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
+{
+	Vector n = faceforward(ray.dir, info.normal);
+
+	Ray newRay = ray;
+	newRay.start = info.ip + n * 0.000001;
+	newRay.dir = reflect(ray.dir, n);
+	newRay.depth++; 
+	
+	return raytrace(newRay) * multiplier;
+}
+
+inline Vector refract(const Vector& i, const Vector& n, double ior)
+{
+	double NdotI = (double) (i * n);
+	double k = 1 - (ior * ior) * (1 - NdotI * NdotI);
+	if (k < 0.0)		// Check for total inner reflection
+		return Vector(0, 0, 0);
+	return ior * i - (ior * NdotI + sqrt(k)) * n;
+}
+
+Color Refr::shade(const Ray& ray, const IntersectionInfo& info)
+{
+// ior = eta2 / eta1
+	Vector refr;
+	if (dot(ray.dir, info.normal) < 0) {
+		// entering the geometry
+		refr = refract(ray.dir, info.normal, 1 / ior_ratio);
+	} else {
+		// leaving the geometry
+		refr = refract(ray.dir, -info.normal, ior_ratio);
+	}
+	if (refr.lengthSqr() == 0) return Color(1, 0, 0);
+	Ray newRay = ray;
+	newRay.start = info.ip - faceforward(ray.dir, info.normal) * 0.000001;
+	newRay.dir = refr;
+	newRay.depth++;
+	return raytrace(newRay) * multiplier;
 }
