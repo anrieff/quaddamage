@@ -137,6 +137,12 @@ inline Vector reflect(Vector in, const Vector& norm)
 	return in;
 }
 
+inline Vector faceforward(const Vector& ray, const Vector& norm)
+{
+	if (dot(ray, norm) < 0) return norm;
+	else return -norm;
+}
+
 struct Ray {
 	Vector start;
 	Vector dir; //!< normed!
