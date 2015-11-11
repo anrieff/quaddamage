@@ -24,6 +24,7 @@
 #ifndef __VECTOR3D_H__
 #define __VECTOR3D_H__
 
+#include <stdio.h>
 #include <math.h>
 
 struct Vector {
@@ -96,6 +97,8 @@ struct Vector {
 	}
 	inline double& operator[](const int index) { return v[index]; }
 	inline const double& operator[](const int index) const { return v[index]; }
+	
+	void print() const { printf("(%.9lf, %.9lf, %.9lf)", x, y, z); }
 };
 
 inline Vector operator + (const Vector& a, const Vector& b)
@@ -159,6 +162,21 @@ inline Vector faceforward(const Vector& ray, const Vector& norm)
 {
 	if (dot(ray, norm) < 0) return norm;
 	else return -norm;
+}
+
+/// inRay must be an unit vector. Returns vectors ray1 and ray2 such that
+/// inRay, ray1 and ray2 form an orthonormal system in 3D (all vectors are
+/// unit, and are mutually orthogonal)
+inline void orthonormalSystem(const Vector& inRay, Vector& ray1, Vector& ray2)
+{
+	const Vector FIXED_SAMPLES[2] = {
+		{-0.267261242, 0.534522484, -0.801783726},
+		{+0.483368245, 0.096673649, +0.870062840}
+	};
+	ray1 = fabs(dot(inRay, FIXED_SAMPLES[0])) > 0.99 ? inRay ^ FIXED_SAMPLES[1] : inRay ^ FIXED_SAMPLES[0];
+	ray1.normalize();
+	ray2 = inRay ^ ray1;
+	ray2.normalize();
 }
 
 struct Ray {
