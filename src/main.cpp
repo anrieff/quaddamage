@@ -145,7 +145,6 @@ void render()
 		{ 0.3, 0.3 },
 		{ 0.6, 0.6 },
 	};
-	Uint32 lastTicks = SDL_GetTicks();
 	for (int y = 0; y < frameHeight(); y++) {
 		for (int x = 0; x < frameWidth(); x++) {
 			if (wantAA) {
@@ -165,11 +164,13 @@ void render()
 int main ( int argc, char** argv )
 {
 	initGraphics(RESX, RESY);
+	setWindowCaption("Quad Damage: rendering...");
 	setupScene();
 	Uint32 startTicks = SDL_GetTicks();
 	render();
 	Uint32 elapsedMs = SDL_GetTicks() - startTicks;
 	printf("Render took %.2fs\n", elapsedMs / 1000.0f);
+	setWindowCaption("Quad Damage: rendered in %.2fs\n", elapsedMs / 1000.0f);
 	displayVFB(vfb);
 	waitForUserExit();
 	closeGraphics();

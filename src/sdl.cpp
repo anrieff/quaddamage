@@ -101,3 +101,14 @@ int frameHeight(void)
 	if (screen) return screen->h;
 	return 0;
 }
+
+void setWindowCaption(const char* msg, float renderTime)
+{
+	if (renderTime >= 0) {
+		char message[128];
+		sprintf(message, msg, renderTime);
+		SDL_WM_SetCaption(message, NULL);
+	} else {
+		SDL_WM_SetCaption(msg, NULL);
+	}
+}
