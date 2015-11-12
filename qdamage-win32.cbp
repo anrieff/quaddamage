@@ -41,9 +41,35 @@
 			<Add library="gdi32" />
 			<Add library="winmm" />
 			<Add library="dxguid" />
+			<Add library="IlmImf" />
+			<Add library="Imath" />
+			<Add library="Iex" />
+			<Add library="Half" />
+			<Add library="IlmThread" />
+			<Add library="zlibstatic" />
 			<Add directory="L:/SDL-1.2.15/lib" />
+			<Add directory="L:/OpenEXR-mingw/lib" />
 		</Linker>
+		<Unit filename="src/bitmap.cpp" />
+		<Unit filename="src/bitmap.h" />
+		<Unit filename="src/camera.cpp" />
+		<Unit filename="src/camera.h" />
+		<Unit filename="src/color.h" />
+		<Unit filename="src/constants.h" />
+		<Unit filename="src/environment.cpp" />
+		<Unit filename="src/environment.h" />
+		<Unit filename="src/geometry.cpp" />
+		<Unit filename="src/geometry.h" />
 		<Unit filename="src/main.cpp" />
+		<Unit filename="src/matrix.cpp" />
+		<Unit filename="src/matrix.h" />
+		<Unit filename="src/sdl.cpp" />
+		<Unit filename="src/sdl.h" />
+		<Unit filename="src/shading.cpp" />
+		<Unit filename="src/shading.h" />
+		<Unit filename="src/util.cpp" />
+		<Unit filename="src/util.h" />
+		<Unit filename="src/vector.h" />
 		<Extensions>
 			<code_completion />
 			<envvars />
