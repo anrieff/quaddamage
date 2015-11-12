@@ -77,7 +77,10 @@ public:
 class Refl: public Shader {
 public:
 	double multiplier;
-	Refl(double mult = 0.99): multiplier(mult) {}
+	double glossiness;
+	int numSamples;
+	Refl(double mult = 0.99, double glossiness = 1.0, int numSamples = 32): 
+			multiplier(mult), glossiness(glossiness), numSamples(numSamples) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
 	
 };
@@ -88,6 +91,27 @@ public:
 	double multiplier;
 	Refr(double ior, double mult = 0.99): ior_ratio(ior), multiplier(mult) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+};
+
+class Layered: public Shader {
+	struct Layer {
+		Shader* shader;
+		Color blend;
+		Texture* tex;
+	};
+	Layer layers[32];
+	int numLayers;
+public:
+	Layered() { numLayers = 0; }
+	void addLayer(Shader* shader, Color blend, Texture* tex = NULL);
+	Color shade(const Ray& ray, const IntersectionInfo& info);		
+};
+
+class Fresnel: public Texture {
+	double ior;
+public:
+	Fresnel(double ior): ior(ior) {}
+	Color sample(const IntersectionInfo& info);
 };
 
 #endif // __SHADING_H__

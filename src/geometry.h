@@ -34,6 +34,7 @@ struct IntersectionInfo {
 	double distance;
 	double u, v;
 	Geometry* geom;
+	Vector rayDir;
 };
 
 class Geometry {

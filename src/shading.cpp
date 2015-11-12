@@ -117,12 +117,41 @@ Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Vector n = faceforward(ray.dir, info.normal);
 
-	Ray newRay = ray;
-	newRay.start = info.ip + n * 0.000001;
-	newRay.dir = reflect(ray.dir, n);
-	newRay.depth++; 
-	
-	return raytrace(newRay) * multiplier;
+	if (glossiness == 1) {
+		Ray newRay = ray;
+		newRay.start = info.ip + n * 0.000001;
+		newRay.dir = reflect(ray.dir, n);
+		newRay.depth++; 
+		
+		return raytrace(newRay) * multiplier;
+	} else {
+		Color result(0, 0, 0);
+		int count = numSamples;
+		if (ray.depth > 0)
+			count = 2;
+		for (int i = 0; i < count; i++) {
+			Vector a, b;
+			orthonormalSystem(n, a, b);
+			double angle = randomFloat() * 2 * PI;
+			double radius = randomFloat() * 1;
+			double x, y;
+			x = cos(angle) * radius;
+			y = sin(angle) * radius;
+			//
+			x *= tan((1 - glossiness) * PI/2);
+			y *= tan((1 - glossiness) * PI/2);
+			
+			Vector modifiedNormal = n + a * x + b * y;
+
+			Ray newRay = ray;
+			newRay.start = info.ip + n * 0.000001;
+			newRay.dir = reflect(ray.dir, modifiedNormal);
+			newRay.depth++; 
+			
+			result += raytrace(newRay) * multiplier;
+		}
+		return result / count;
+	}
 }
 
 inline Vector refract(const Vector& i, const Vector& n, double ior)
@@ -151,4 +180,40 @@ Color Refr::shade(const Ray& ray, const IntersectionInfo& info)
 	newRay.dir = refr;
 	newRay.depth++;
 	return raytrace(newRay) * multiplier;
+}
+
+void Layered::addLayer(Shader* shader, Color blend, Texture* tex)
+{
+	if (numLayers == COUNT_OF(layers)) return;
+	layers[numLayers++] = { shader, blend, tex };
+}
+
+Color Layered::shade(const Ray& ray, const IntersectionInfo& info)
+{
+	Color result(0, 0, 0);
+	for (int i = 0; i < numLayers; i++) {
+		Color fromLayer = layers[i].shader->shade(ray, info);
+		Color blendAmount = layers[i].blend;
+		if (layers[i].tex) blendAmount = blendAmount * layers[i].tex->sample(info);
+		result = blendAmount * fromLayer + (Color(1, 1, 1) - blendAmount) * result;
+	}
+	return result;
+}
+
+inline double fresnel(const Vector& i, const Vector& n, double ior)
+{
+	// Schlick's approximation
+	double f = sqr((1.0f - ior) / (1.0f + ior));
+	double NdotI = (double) -dot(n, i);
+	return f + (1.0f - f) * pow(1.0f - NdotI, 5.0f);
+}
+
+Color Fresnel::sample(const IntersectionInfo& info)
+{
+	double eta = ior;
+	if (dot(info.normal, info.rayDir) > 0)
+		eta = 1 / eta;
+	Vector n = faceforward(info.rayDir, info.normal);
+	double fr = fresnel(info.rayDir, n, eta);
+	return Color(fr, fr, fr);
 }

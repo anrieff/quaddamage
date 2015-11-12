@@ -11,7 +11,6 @@
 #include "environment.h"
 using std::vector;
 
-#define COUNT_OF(arr) int((sizeof(arr)) / sizeof(arr[0]))
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 
@@ -25,7 +24,8 @@ Sphere s1;
 Cube cube;
 CheckerTexture blue;
 Lambert ceiling;
-Phong ball, pod;
+Phong ball;
+Lambert pod;
 Vector lightPos;
 double lightIntensity;
 Color ambientLight;
@@ -40,7 +40,7 @@ void setupScene()
 	camera.yaw = 0;
 	camera.pitch = -30;
 	camera.roll = 0;
-	camera.fov = 60;
+	camera.fov = 90;
 	camera.aspectRatio = float(frameWidth()) / float(frameHeight());
 	plane.y = 1;
 	plane.limit = 100;
@@ -51,10 +51,13 @@ void setupScene()
 	ceilingTex.color2 = Color(0.5, 0.5, 0.5);
 	Texture* plochki = new BitmapTexture("data/floor.bmp", 100);
 	pod.texture = plochki;
-	pod.specularExponent = 20;
-	pod.specularMultiplier = 5.3;
+	
+	Layered* layeredPod = new Layered;
+	layeredPod->addLayer(&pod, Color(1, 1, 1));
+	layeredPod->addLayer(new Refl(0.9), Color(1, 1, 1) * 0.02);
+	
 	ceiling.texture = &ceilingTex;
-	nodes.push_back({ &plane, &pod });
+	nodes.push_back({ &plane, layeredPod });
 	//nodes.push_back({ &plane2, &ceiling });
 	lightPos = Vector(120, 180, 0);
 	lightIntensity = 45000.0;
@@ -62,8 +65,8 @@ void setupScene()
 	// sphere:
 	s1.O = Vector(0, 30, -30);
 	s1.R = 27;
-	cube.O = Vector(0, 30, -30);
-	cube.halfSide = 20;
+	cube.O = Vector(0, 6, -30);
+	cube.halfSide = 15;
 	CsgOp* csg = new CsgMinus;
 	csg->left = &cube;
 	csg->right = &s1;
@@ -74,7 +77,13 @@ void setupScene()
 	ball.texture = new BitmapTexture("data/world.bmp");
 	ball.specularExponent = 200;
 	ball.specularMultiplier = 0.5;
-	nodes.push_back({ &s1, new Refr(1.3, 0.9 ) });
+	
+	Layered* glass = new Layered;
+	const double IOR_GLASS = 1.6;
+	glass->addLayer(new Refr(IOR_GLASS, 0.9), Color(1, 1, 1));
+	glass->addLayer(new Refl(0.9), Color(1, 1, 1), new Fresnel(IOR_GLASS));
+	
+	nodes.push_back({ &s1, glass });
 	
 	environment = new CubemapEnvironment("data/env/forest");
 	
@@ -101,8 +110,10 @@ Color raytrace(Ray ray)
 	if (closestNode == NULL) {
 		if (environment) return environment->getEnvironment(ray.dir);
 		else return Color(0, 0, 0);
-	} else
+	} else {
+		closestInfo.rayDir = ray.dir;
 		return closestNode->shader->shade(ray, closestInfo);
+	}
 }
 
 bool visibilityCheck(const Vector& start, const Vector& end)
@@ -134,7 +145,8 @@ void render()
 		{ 0.3, 0.3 },
 		{ 0.6, 0.6 },
 	};
-	for (int y = 0; y < frameHeight(); y++)
+	Uint32 lastTicks = SDL_GetTicks();
+	for (int y = 0; y < frameHeight(); y++) {
 		for (int x = 0; x < frameWidth(); x++) {
 			if (wantAA) {
 				Color sum(0, 0, 0);
@@ -146,6 +158,8 @@ void render()
 				vfb[y][x] = raytrace(ray);
 			}
 		}
+		displayVFB(vfb);
+	}
 }
 
 int main ( int argc, char** argv )
@@ -155,7 +169,7 @@ int main ( int argc, char** argv )
 	Uint32 startTicks = SDL_GetTicks();
 	render();
 	Uint32 elapsedMs = SDL_GetTicks() - startTicks;
-	printf("Render took %.2lfs\n", elapsedMs / 1000.0);
+	printf("Render took %.2fs\n", elapsedMs / 1000.0f);
 	displayVFB(vfb);
 	waitForUserExit();
 	closeGraphics();
