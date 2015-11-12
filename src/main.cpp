@@ -145,6 +145,7 @@ void render()
 		{ 0.3, 0.3 },
 		{ 0.6, 0.6 },
 	};
+	Uint32 lastTicks = SDL_GetTicks();
 	for (int y = 0; y < frameHeight(); y++) {
 		for (int x = 0; x < frameWidth(); x++) {
 			if (wantAA) {
@@ -157,7 +158,10 @@ void render()
 				vfb[y][x] = raytrace(ray);
 			}
 		}
-		displayVFB(vfb);
+		if (SDL_GetTicks() - lastTicks > 100) {
+			displayVFB(vfb);
+			lastTicks = SDL_GetTicks();
+		}
 	}
 }
 
