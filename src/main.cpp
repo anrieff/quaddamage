@@ -9,6 +9,7 @@
 #include "geometry.h"
 #include "shading.h"
 #include "environment.h"
+#include "mesh.h"
 using std::vector;
 
 
@@ -35,59 +36,61 @@ int maxRaytraceDepth = 10;
 
 void setupScene()
 {
-	ambientLight = Color(1, 1, 1) * 0.1;
-	camera.position = Vector(0, 60, -120);
-	camera.yaw = 0;
-	camera.pitch = -30;
+
+	camera.yaw = 5;
+	camera.pitch = -5;
 	camera.roll = 0;
-	camera.fov = 90;
-	camera.aspectRatio = float(frameWidth()) / float(frameHeight());
-	plane.y = 1;
-	plane.limit = 100;
-	plane2.y = 200;
-	checker.color1 = Color(0, 0, 0.5);
-	checker.color2 = Color(1, 0.5, 0);
-	ceilingTex.color1 = Color(0.5, 0.5, 0.5);
-	ceilingTex.color2 = Color(0.5, 0.5, 0.5);
-	Texture* plochki = new BitmapTexture("data/floor.bmp", 100);
-	pod.texture = plochki;
-	
-	Layered* layeredPod = new Layered;
-	layeredPod->addLayer(&pod, Color(1, 1, 1));
-	layeredPod->addLayer(new Refl(0.9), Color(1, 1, 1) * 0.02);
-	
-	ceiling.texture = &ceilingTex;
-	nodes.push_back({ &plane, layeredPod });
-	//nodes.push_back({ &plane2, &ceiling });
-	lightPos = Vector(120, 180, 0);
-	lightIntensity = 45000.0;
-	
-	// sphere:
-	s1.O = Vector(0, 30, -30);
-	s1.R = 27;
-	cube.O = Vector(0, 6, -30);
-	cube.halfSide = 15;
-	CsgOp* csg = new CsgMinus;
-	csg->left = &cube;
-	csg->right = &s1;
-	blue.color1 = Color(0.2, 0.4, 1.0);
-	blue.color2 = Color(0.4, 0.4, 0.4);
-	blue.scaling = 2;
-	
-	ball.texture = new BitmapTexture("data/world.bmp");
-	ball.specularExponent = 200;
-	ball.specularMultiplier = 0.5;
-	
-	Layered* glass = new Layered;
-	const double IOR_GLASS = 1.6;
-	glass->addLayer(new Refr(IOR_GLASS, 0.9), Color(1, 1, 1));
-	glass->addLayer(new Refl(0.9), Color(1, 1, 1), new Fresnel(IOR_GLASS));
-	
-	nodes.push_back({ &s1, glass });
-	
-	environment = new CubemapEnvironment("data/env/forest");
+	camera.fov = 60;
+	camera.aspectRatio = 4. / 3.0;
+	camera.position = Vector(45, 120, -300);
 	
 	camera.frameBegin();
+	
+	lightPos = Vector(-90, 1200, -750);
+	lightIntensity = 1200000;
+	ambientLight = Color(0.5, 0.5, 0.5);
+	
+	/* Create a floor node, with a layered shader: perfect reflection on top of woody diffuse */
+	Plane* plane = new Plane;
+	plane->limit = 200;
+	Texture* texture = new BitmapTexture("data/texture/wood.bmp", 100);
+	Lambert* lambert = new Lambert;
+	lambert->texture = texture;
+	Layered* planeShader = new Layered;
+	planeShader->addLayer(lambert, Color(1, 1, 1));
+	planeShader->addLayer(new Refl, Color(0.05, 0.05, 0.05), new Fresnel(1.33));
+	nodes.push_back({plane, planeShader});
+	
+	
+	Mesh* mesh = new Mesh(false);
+	mesh->setFaceted(false);
+	CheckerTexture* checker = new CheckerTexture;
+	checker->color1 = Color(0.7, 0.7, 0.7);
+	checker->color2 = Color(0.75, 0.15, 0.15);
+	
+	mesh->translate(Vector(-100, 50, 0));
+	mesh->computeBoundingGeometry();
+	Lambert* meshShader = new Lambert;
+	meshShader->color = Color(1, 1, 1) * 0.75;
+	meshShader->texture = checker;
+	nodes.push_back({mesh, meshShader});
+	
+	/* Create a glossy sphere */
+	Sphere* sphere = new Sphere;
+	sphere->O = Vector(100, 50, 60);
+	sphere->R = 50;
+	Shader* glossy = new Refl(0.9, 0.97, 25);
+	
+	nodes.push_back({sphere, glossy});
+	
+	Color colors[3] = { Color(1, 0, 0), Color(1, 1, 0), Color(0, 1, 0) };
+	// desaturate a bit:
+	for (int i = 0; i < 3; i++) colors[i].adjustSaturation(0.9f);
+	for (int i = 0; i < 3; i++) {
+		nodes.push_back({new Sphere(Vector(10 + 32*i, 15, 0), 15.0), new Phong(colors[i]*0.75, 32) });
+	}
+		
+	environment = new CubemapEnvironment("data/env/forest");
 }
 
 Color raytrace(Ray ray)

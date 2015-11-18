@@ -68,9 +68,14 @@ public:
 class Phong: public Shader {
 public:
 	Color color;
-	Texture* texture;
-	double specularMultiplier;
 	double specularExponent;
+	double specularMultiplier;
+	Texture* texture;
+	Phong(Color color = Color(0.5f, 0.5f, 0.5f), double specularExponent = 10, double specularMultiplier = 0.4, Texture* texture = NULL):
+		color(color),
+		specularExponent(specularExponent),
+		specularMultiplier(specularMultiplier),
+		texture(texture) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
 };
 

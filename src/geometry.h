@@ -55,6 +55,8 @@ class Sphere: public Geometry {
 public:
 	Vector O;
 	double R;
+	Sphere() {}
+	Sphere(Vector center, double radius): O(center), R(radius) {}
 	
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };

@@ -115,6 +115,14 @@ struct Color {
 	{
 		return components[index];
 	}
+	
+	inline void adjustSaturation(float amount)
+	{
+		float mid = intensity();
+		r = mid + (r - mid) * amount;
+		g = mid + (g - mid) * amount;
+		b = mid + (b - mid) * amount;
+	}
 };
 
 /// adds two colors
