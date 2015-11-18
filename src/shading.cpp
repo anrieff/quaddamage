@@ -54,10 +54,10 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v1 = faceforward(ray.dir, info.normal);
-	Vector v2 = lightPos - info.ip;
+	Vector v2 = info.ip - lightPos; // from light towards the intersection point
+	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
 	v2.normalize();
-	double lambertCoeff = dot(v1, v2);
+	double lambertCoeff = dot(v1, -v2);
 	
 	return ambientLight * diffuse
 		+ diffuse * lambertCoeff * getLightContrib(info);
@@ -68,13 +68,13 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v1 = faceforward(ray.dir, info.normal);
-	Vector v2 = lightPos - info.ip;
+	Vector v2 = info.ip - lightPos; // from light towards the intersection point
+	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
 	v2.normalize();
-	double lambertCoeff = dot(v1, v2);
+	double lambertCoeff = dot(v1, -v2);
 	double fromLight = getLightContrib(info);
 	
-	Vector r = reflect(info.ip - lightPos, info.normal);
+	Vector r = reflect(v2, v1);
 	Vector toCamera = -ray.dir;
 	double cosGamma = dot(toCamera, r);
 	double phongCoeff;
