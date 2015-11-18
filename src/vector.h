@@ -183,7 +183,12 @@ struct Ray {
 	Vector start;
 	Vector dir; //!< normed!
 	int depth;
-	Ray() { depth = 0; }
+	bool debug;
+	Ray()
+	{
+		depth = 0;
+		debug = false;
+	}
 };
 
 #endif // __VECTOR3D_H__

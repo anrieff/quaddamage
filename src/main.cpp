@@ -139,6 +139,13 @@ bool visibilityCheck(const Vector& start, const Vector& end)
 	return true;
 }
 
+void debugRayTrace(int x, int y)
+{
+	Ray ray = camera.getScreenRay(x, y);
+	ray.debug = true;
+	raytrace(ray);
+}
+
 void render()
 {
 	const double kernel[5][2] = {

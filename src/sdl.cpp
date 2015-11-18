@@ -81,6 +81,13 @@ void waitForUserExit(void)
 							break;
 					}
 				}
+				case SDL_MOUSEBUTTONDOWN:
+				{
+					// raytrace a single ray at the given pixel
+					extern void debugRayTrace(int x, int y);
+					debugRayTrace(ev.button.x, ev.button.y);
+					break;
+				}
 				default:
 					break;
 			}
