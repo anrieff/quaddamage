@@ -23,8 +23,11 @@
  */
 #ifndef __GEOMETRY_H__
 #define __GEOMETRY_H__
-#include "vector.h"
+
 #include <vector>
+#include "vector.h"
+#include "transform.h"
+#include "scene.h"
 
 
 class Geometry;
@@ -37,10 +40,19 @@ struct IntersectionInfo {
 	Vector rayDir;
 };
 
-class Geometry {
+/**
+ * @class Intersectable
+ * @brief implements the interface to an intersectable primitive (geometry or node)
+ */
+class Intersectable {
 public:
 	virtual bool intersect(const Ray& ray, IntersectionInfo& info) = 0;
+};
+
+class Geometry: public Intersectable, public SceneElement {
+public:
 	virtual ~Geometry() {}
+	ElementType getElementType() const { return ELEM_GEOMETRY; }
 };
 
 class Plane: public Geometry {
@@ -48,6 +60,11 @@ public:
 	double y;
 	double limit;
 	Plane() { y = 0; limit = 1e99; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("y", &y);
+		pb.getDoubleProp("limit", &limit);
+	}
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
 
@@ -55,8 +72,12 @@ class Sphere: public Geometry {
 public:
 	Vector O;
 	double R;
-	Sphere() {}
-	Sphere(Vector center, double radius): O(center), R(radius) {}
+	Sphere(Vector center = Vector(0, 0, 0), double radius = 1): O(center), R(radius) {}
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getVectorProp("O", &O);
+		pb.getDoubleProp("R", &R);
+	}
 	
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
@@ -66,6 +87,13 @@ class Cube: public Geometry {
 public:
 	Vector O;
 	double halfSide;
+	Cube(Vector O = Vector(0, 0, 0), double halfSide = 0.5): O(O), halfSide(halfSide) {}
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getVectorProp("O", &O);
+		pb.getDoubleProp("halfSide", &halfSide);
+	}
 
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
@@ -76,6 +104,14 @@ public:
 	Geometry *left, *right;
 	
 	virtual bool boolOp(bool inA, bool inB) = 0;
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.requiredProp("left");
+		pb.requiredProp("right");
+		pb.getGeometryProp("left", &left);
+		pb.getGeometryProp("right", &right);
+	}
 	
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
@@ -97,9 +133,27 @@ public:
 
 struct Shader;
 
-struct Node {
+struct Node: public Intersectable, public SceneElement {
 	Geometry* geom;
 	Shader* shader;
+	Transform transform;
+	Texture* bump;
+	
+	Node() { bump = NULL; }
+	Node(Geometry* g, Shader* s) { geom = g; shader = s; bump = NULL; }
+	
+	// from Intersectable:
+	bool intersect(const Ray& ray, IntersectionInfo& data);
+
+	// from SceneElement:
+	ElementType getElementType() const { return ELEM_NODE; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getGeometryProp("geometry", &geom);
+		pb.getShaderProp("shader", &shader);
+		pb.getTransformProp(transform);
+		pb.getTextureProp("bump", &bump);
+	}
 };
 
 #endif // __GEOMETRY_H__

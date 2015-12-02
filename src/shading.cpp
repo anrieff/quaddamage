@@ -21,14 +21,11 @@
  * @File shading.cpp
  * @Brief Contains implementations of shader classes
  */
+#include <string.h>
 #include "shading.h"
 #include "bitmap.h"
 
 bool visibilityCheck(const Vector& start, const Vector& end);
-
-extern Vector lightPos;
-extern double lightIntensity;
-extern Color ambientLight;
 
 Color CheckerTexture::sample(const IntersectionInfo& info)
 {
@@ -41,12 +38,12 @@ Color CheckerTexture::sample(const IntersectionInfo& info)
 
 double getLightContrib(const IntersectionInfo& info)
 {
-	double distanceToLightSqr = (info.ip - lightPos).lengthSqr();
+	double distanceToLightSqr = (info.ip - scene.settings.lightPos).lengthSqr();
 
-	if (!visibilityCheck(info.ip + info.normal * 1e-6, lightPos)) {
+	if (!visibilityCheck(info.ip + info.normal * 1e-6, scene.settings.lightPos)) {
 		return 0;
 	} else {
-		return lightIntensity / distanceToLightSqr;
+		return scene.settings.lightIntensity / distanceToLightSqr;
 	}
 }
 
@@ -54,12 +51,12 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v2 = info.ip - lightPos; // from light towards the intersection point
+	Vector v2 = info.ip - scene.settings.lightPos; // from light towards the intersection point
 	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
 	v2.normalize();
 	double lambertCoeff = dot(v1, -v2);
 	
-	return ambientLight * diffuse
+	return scene.settings.ambientLight * diffuse
 		+ diffuse * lambertCoeff * getLightContrib(info);
 	
 }
@@ -68,7 +65,7 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 {
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
-	Vector v2 = info.ip - lightPos; // from light towards the intersection point
+	Vector v2 = info.ip - scene.settings.lightPos; // from light towards the intersection point
 	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
 	v2.normalize();
 	double lambertCoeff = dot(v1, -v2);
@@ -83,18 +80,17 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 	else
 		phongCoeff = 0;
 	
-	return ambientLight * diffuse
+	return scene.settings.ambientLight * diffuse
 		+ diffuse * lambertCoeff * fromLight
 		+ Color(1, 1, 1) * (phongCoeff * specularMultiplier * fromLight);
 }
 
-BitmapTexture::BitmapTexture(const char* filename, double scaling)
-{
-	bitmap = new Bitmap;
-	bitmap->loadImage(filename);
-	this->scaling = 1/scaling;
-}
 
+BitmapTexture::BitmapTexture()
+{
+	bitmap = new Bitmap();
+	scaling = 1.0; 
+}
 BitmapTexture::~BitmapTexture() { delete bitmap; }
 
 Color BitmapTexture::sample(const IntersectionInfo& info)
@@ -169,10 +165,10 @@ Color Refr::shade(const Ray& ray, const IntersectionInfo& info)
 	Vector refr;
 	if (dot(ray.dir, info.normal) < 0) {
 		// entering the geometry
-		refr = refract(ray.dir, info.normal, 1 / ior_ratio);
+		refr = refract(ray.dir, info.normal, 1 / ior);
 	} else {
 		// leaving the geometry
-		refr = refract(ray.dir, -info.normal, ior_ratio);
+		refr = refract(ray.dir, -info.normal, ior);
 	}
 	if (refr.lengthSqr() == 0) return Color(1, 0, 0);
 	Ray newRay = ray;
@@ -186,6 +182,50 @@ void Layered::addLayer(Shader* shader, Color blend, Texture* tex)
 {
 	if (numLayers == COUNT_OF(layers)) return;
 	layers[numLayers++] = { shader, blend, tex };
+}
+
+void Layered::fillProperties(ParsedBlock& pb)
+{
+	char name[128];
+	char value[256];
+	int srcLine;
+	for (int i = 0; i < pb.getBlockLines(); i++) {
+		// fetch and parse all lines like "layer <shader>, <color>[, <texture>]"
+		pb.getBlockLine(i, srcLine, name, value);
+		if (!strcmp(name, "layer")) {
+			char shaderName[200];
+			char textureName[200] = "";
+			bool err = false;
+			if (!getFrontToken(value, shaderName)) {
+				err = true;
+			} else {
+				stripPunctuation(shaderName);
+			}
+			if (!strlen(value)) err = true;
+			if (!err && value[strlen(value) - 1] != ')') {
+				if (!getLastToken(value, textureName)) {
+					err = true;
+				} else {
+					stripPunctuation(textureName);
+				}
+			}
+			if (!err && !strcmp(textureName, "NULL")) strcpy(textureName, "");
+			Shader* shader = NULL;
+			Texture* texture = NULL;
+			if (!err) {
+				shader = pb.getParser().findShaderByName(shaderName);
+				err = (shader == NULL);
+			}
+			if (!err && strlen(textureName)) {
+				texture = pb.getParser().findTextureByName(textureName);
+				err = (texture == NULL);
+			}
+			if (err) throw SyntaxError(srcLine, "Expected a line like `layer <shader>, <color>[, <texture>]'");
+			double x, y, z;
+			get3Doubles(srcLine, value, x, y, z);
+			addLayer(shader, Color((float) x, (float) y, (float) z), texture);
+		}
+	}
 }
 
 Color Layered::shade(const Ray& ray, const IntersectionInfo& info)

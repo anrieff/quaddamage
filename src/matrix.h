@@ -57,4 +57,6 @@ Matrix rotationAroundX(double angle); //!< returns a rotation matrix around the 
 Matrix rotationAroundY(double angle); //!< same as above, but rotate around Y
 Matrix rotationAroundZ(double angle); //!< same as above, but rotate around Z
 
+Matrix transpose(const Matrix& a); //!< transpose a matrix
+
 #endif // __MATRIX_H__

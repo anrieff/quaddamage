@@ -32,15 +32,15 @@ using std::max;
 using std::vector;
 
 
-Mesh::Mesh(bool isTetraeder)
+void Mesh::beginRender()
 {
-	faceted = true;
 	if (isTetraeder)
 		generateTetraeder();
 	else
 		generateTruncatedIcosahedron();
 	
 	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
+	computeBoundingGeometry();
 }
 
 void Mesh::computeBoundingGeometry()
@@ -64,6 +64,7 @@ void Mesh::computeBoundingGeometry()
 
 Mesh::~Mesh()
 {
+	if (boundingGeom) delete boundingGeom;
 }
 
 inline double det(const Vector& a, const Vector& b, const Vector& c)
@@ -141,10 +142,4 @@ bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 	if (found)
 		info = closestInfo;
 	return found;
-}
-
-void Mesh::translate(Vector amount)
-{
-	for (Vector& v: vertices)
-		v += amount;
 }

@@ -80,6 +80,7 @@ void waitForUserExit(void)
 						default:
 							break;
 					}
+					break;
 				}
 				case SDL_MOUSEBUTTONDOWN:
 				{

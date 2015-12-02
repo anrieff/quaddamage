@@ -36,26 +36,38 @@ struct Triangle {
 // the C vertex of triangle with index 5 is:
 // mesh.vertices[mesh.triangles[5].v[2]];
 
-struct Mesh: public Geometry {
+class Mesh: public Geometry {
 	std::vector<Vector> vertices;
 	std::vector<Vector> normals;
 	std::vector<Vector> uvs;
 	std::vector<Triangle> triangles;
-	
 	Geometry* boundingGeom;
-	bool faceted;
-	
-	Mesh(bool isTetraeder /* wtf? */);
-	~Mesh();
-	
-	void setFaceted(bool faceted) { this->faceted = faceted; }
-	bool intersect(const Ray& ray, IntersectionInfo& info);
-	void translate(Vector amount);
+
 	void computeBoundingGeometry();
-public:
-	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
 	void generateTetraeder();
 	void generateTruncatedIcosahedron();
+	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
+public:
+	
+	bool faceted;
+	bool isTetraeder;
+
+	Mesh() {
+		faceted = false;
+		isTetraeder = false;
+		boundingGeom = NULL;
+	}
+	~Mesh();
+	
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getBoolProp("faceted", &faceted);
+		pb.getBoolProp("isTetraeder", &isTetraeder);
+	}
+	
+	void beginRender();
+	
+	bool intersect(const Ray& ray, IntersectionInfo& info);
 };
 
 #endif // __MESH_H__

@@ -26,6 +26,7 @@
 
 #include "color.h"
 #include "vector.h"
+#include "scene.h"
 
 enum CubeOrder {
 	NEGX,
@@ -36,11 +37,13 @@ enum CubeOrder {
 	POSZ,
 };
 
-class Environment {
+class Environment: public SceneElement {
 public:
 	virtual ~Environment() {}
 	/// gets a color from the environment at the specified direction
 	virtual Color getEnvironment(const Vector& dir) = 0;
+	
+	ElementType getElementType() const { return ELEM_ENVIRONMENT; }
 };
 
 class Bitmap;
@@ -55,7 +58,17 @@ public:
  	/// (or they may be .exr images, not .bmp).
  	/// The folder specification shouldn't include a trailing slash; 
  	/// e.g. "/images/cubemaps/cathedral" is OK.
-	CubemapEnvironment(const char* folder);
+ 	CubemapEnvironment() {}
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		Environment::fillProperties(pb);
+		char folder[256];
+		if (!pb.getFilenameProp("folder", folder)) pb.requiredProp("folder");
+		if (!loadMaps(folder)) {
+			fprintf(stderr, "CubemapEnvironment: Could not load maps from `%s'\n", folder);
+		}
+	}
 	
 	~CubemapEnvironment();
 	Color getEnvironment(const Vector& dir);

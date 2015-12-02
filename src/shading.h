@@ -25,18 +25,23 @@
 #define __SHADING_H__
 
 #include "geometry.h"
+#include "scene.h"
 #include "color.h"
 
-class Shader {
+class Shader: public SceneElement {
 public:
 	virtual Color shade(const Ray& ray, const IntersectionInfo& info) = 0;
 	virtual ~Shader() {}
+	
+	ElementType getElementType() const { return ELEM_SHADER; }
 };
 
-class Texture {
+class Texture: public SceneElement {
 public:
 	virtual Color sample(const IntersectionInfo& info) = 0;
 	virtual ~Texture() {}
+	
+	ElementType getElementType() const { return ELEM_TEXTURE; }
 };
 
 class CheckerTexture: public Texture {
@@ -45,6 +50,13 @@ public:
 	double scaling;
 	CheckerTexture() { color1.makeZero(); color2.makeZero(); scaling = 1; }
 	virtual Color sample(const IntersectionInfo& info);
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color1", &color1);
+		pb.getColorProp("color2", &color2);
+		pb.getDoubleProp("scaling", &scaling);
+	}
 };
 
 class Bitmap;
@@ -52,9 +64,16 @@ class BitmapTexture: public Texture {
 	Bitmap* bitmap;
 	double scaling;
 public:
-	BitmapTexture(const char* filename, double scaling = 1.0);
+	BitmapTexture();
 	~BitmapTexture();
 	Color sample(const IntersectionInfo& info);
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("scaling", &scaling);
+		scaling = 1/scaling;
+		if (!pb.getBitmapFileProp("file", *bitmap));
+			pb.requiredProp("file");
+	}
 };
 
 class Lambert: public Shader {
@@ -63,6 +82,11 @@ public:
 	Texture* texture;
 	Lambert() { color.makeZero(); texture = NULL; }
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &color);
+		pb.getTextureProp("texture", &texture);
+	}
 };
 
 class Phong: public Shader {
@@ -77,6 +101,13 @@ public:
 		specularMultiplier(specularMultiplier),
 		texture(texture) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &color);
+		pb.getTextureProp("texture", &texture);
+		pb.getDoubleProp("specularExponent", &specularExponent);
+		pb.getDoubleProp("specularMultiplier", &specularMultiplier);
+	}
 };
 
 class Refl: public Shader {
@@ -87,15 +118,26 @@ public:
 	Refl(double mult = 0.99, double glossiness = 1.0, int numSamples = 32): 
 			multiplier(mult), glossiness(glossiness), numSamples(numSamples) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("multiplier", &multiplier);
+		pb.getDoubleProp("glossiness", &glossiness, 0, 1);
+		pb.getIntProp("numSamples", &numSamples, 1);
+	}
 	
 };
 
 class Refr: public Shader {
 public:
-	double ior_ratio;
+	double ior;
 	double multiplier;
-	Refr(double ior, double mult = 0.99): ior_ratio(ior), multiplier(mult) {}
+	Refr(double ior = 1.33, double mult = 0.99): ior(ior), multiplier(mult) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("multiplier", &multiplier);
+		pb.getDoubleProp("ior", &ior, 1e-6, 10);
+	}
 };
 
 class Layered: public Shader {
@@ -110,13 +152,18 @@ public:
 	Layered() { numLayers = 0; }
 	void addLayer(Shader* shader, Color blend, Texture* tex = NULL);
 	Color shade(const Ray& ray, const IntersectionInfo& info);		
+	void fillProperties(ParsedBlock& pb);
 };
 
 class Fresnel: public Texture {
 	double ior;
 public:
-	Fresnel(double ior): ior(ior) {}
+	Fresnel(double ior = 1.33): ior(ior) {}
 	Color sample(const IntersectionInfo& info);
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("ior", &ior, 1e-6, 10);
+	}
 };
 
 #endif // __SHADING_H__

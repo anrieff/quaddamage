@@ -26,7 +26,7 @@
 #include "util.h"
 #include "sdl.h"
 
-void Camera::frameBegin()
+void Camera::beginFrame()
 {	
 	double x2d = aspectRatio, y2d = +1;
 	

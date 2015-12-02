@@ -26,8 +26,9 @@
 
 #include "vector.h"
 #include "matrix.h"
+#include "scene.h"
 
-class Camera {
+class Camera: public SceneElement {
 	Vector topLeft, topRight, bottomLeft;
 	Matrix rotation;
 public:
@@ -36,7 +37,26 @@ public:
 	double aspectRatio;
 	double fov;              //!< in degrees
 	
-	void frameBegin();
+	Camera() {
+		position.makeZero();
+		yaw = pitch = roll = 0;
+		aspectRatio = 4./3.; 
+		fov = 90;
+	}
+	
+	void fillProperties(ParsedBlock& pb)
+	{
+		if (!pb.getVectorProp("position", &position))
+			pb.requiredProp("pos");
+		pb.getDoubleProp("aspectRatio", &aspectRatio, 1e-6);
+		pb.getDoubleProp("fov", &fov, 0.0001, 179);
+		pb.getDoubleProp("yaw", &yaw);
+		pb.getDoubleProp("pitch", &pitch, -90, 90);
+		pb.getDoubleProp("roll", &roll);
+	}
+	
+	ElementType getElementType() const { return ELEM_CAMERA; }
+	void beginFrame();
 	
 	Ray getScreenRay(double xScreen, double yScreen);
 };

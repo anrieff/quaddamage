@@ -175,3 +175,26 @@ bool CsgOp::intersect(const Ray& ray, IntersectionInfo& info)
 	
 	return false;
 }
+
+bool Node::intersect(const Ray& ray, IntersectionInfo& data)
+{
+	// world space -> object's canonic space
+	Ray rayCanonic = ray;
+	rayCanonic.start = transform.undoPoint(ray.start);
+	rayCanonic.dir = transform.undoDirection(ray.dir);
+	
+	double rayDirLength = rayCanonic.dir.length();
+	rayCanonic.dir.normalize();
+	if (!geom->intersect(rayCanonic, data)) 
+		return false;
+	
+	// The intersection found is in object space, convert to world space:
+	data.normal = transform.normal(data.normal);
+	data.normal.normalize();
+//	data.dNdx = normalize(transform.direction(data.dNdx));
+//	data.dNdy = normalize(transform.direction(data.dNdy));
+	data.ip = transform.point(data.ip);
+	data.distance /= rayDirLength;  // (5)
+	return true;
+
+}
