@@ -63,7 +63,7 @@ BitmapTexture die_faces {
 
 BumpTexture bump_tex {
 	file	"texture/zar-bump.bmp"
-	strength 40
+	strength 10
 }
 
 Lambert die_faces_diffuse {

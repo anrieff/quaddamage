@@ -190,9 +190,11 @@ bool Node::intersect(const Ray& ray, IntersectionInfo& data)
 	
 	// The intersection found is in object space, convert to world space:
 	data.normal = transform.normal(data.normal);
+	data.dNdx = transform.direction(data.dNdx);
+	data.dNdy = transform.direction(data.dNdy);
 	data.normal.normalize();
-//	data.dNdx = normalize(transform.direction(data.dNdx));
-//	data.dNdy = normalize(transform.direction(data.dNdy));
+	data.dNdx.normalize();
+	data.dNdy.normalize();
 	data.ip = transform.point(data.ip);
 	data.distance /= rayDirLength;  // (5)
 	return true;
