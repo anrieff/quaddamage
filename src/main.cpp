@@ -39,6 +39,8 @@ Color raytrace(Ray ray)
 		else return Color(0, 0, 0);
 	} else {
 		closestInfo.rayDir = ray.dir;
+		if (closestNode->bump)
+			closestNode->bump->modifyNormal(closestInfo);
 		return closestNode->shader->shade(ray, closestInfo);
 	}
 }
@@ -103,7 +105,7 @@ void render()
 int main ( int argc, char** argv )
 {
 	initRandom(42);
-	if (!scene.parseScene("data/lecture7.qdmg")) {
+	if (!scene.parseScene("data/bumpmap.qdmg")) {
 		printf("Could not parse the scene!\n");
 		return -1;
 	}

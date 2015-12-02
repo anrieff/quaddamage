@@ -39,6 +39,7 @@ public:
 class Texture: public SceneElement {
 public:
 	virtual Color sample(const IntersectionInfo& info) = 0;
+	virtual void modifyNormal(IntersectionInfo& info) {}
 	virtual ~Texture() {}
 	
 	ElementType getElementType() const { return ELEM_TEXTURE; }
@@ -75,6 +76,25 @@ public:
 			pb.requiredProp("file");
 	}
 };
+
+class BumpTexture: public Texture {
+	Bitmap* bitmap;
+	double strength, scaling;
+public:
+	BumpTexture();
+	~BumpTexture();
+	Color sample(const IntersectionInfo& info) {return Color(0, 0, 0);}
+	void modifyNormal(IntersectionInfo& info);
+	void beginRender();
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getDoubleProp("strength", &strength);
+		pb.getDoubleProp("scaling", &scaling);
+		if (!pb.getBitmapFileProp("file", *bitmap));
+			pb.requiredProp("file");
+	}
+};
+
 
 class Lambert: public Shader {
 public:

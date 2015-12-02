@@ -119,21 +119,43 @@ Node small_sphere_green {
 CheckerTexture checker {
 	color1	(0.7, 0.7, 0.7)
 	color2	(0.75, 0.15, 0.15)
+	scaling 100
 }
 
 Lambert soccer_ball_shader {
 	texture checker
 }
 
-Mesh soccer_ball_geom {
-	faceted      false
-	isTetraeder  false
+Mesh heart {
+	file         "geom/heart.obj"
+	faceted true
 }
 
-Node soccer_ball {
-	geometry soccer_ball_geom
-	shader   soccer_ball_shader
-	translate (-100, 50, 0)
+BitmapTexture lava_tex {
+	file "texture/lava.bmp"
+}
+
+Lambert lava_shader {
+	texture lava_tex
+}
+
+//Node heart {
+//	geometry heart
+//	shader   lava_shader
+//	translate (-100, 50, 0)
+//	scale (25, 25, 25)
+//	rotate (-45, 60, 0)
+//}
+
+Mesh teapot {
+	file "geom/teapot_lowres.obj"
+}
+
+Node teapot {
+	geometry teapot
+	shader soccer_ball_shader
+	translate (-100, 0, 0)
+	scale (60, 60, 60)
 }
 
 // 8. And, finally, an environment

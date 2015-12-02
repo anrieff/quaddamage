@@ -30,16 +30,11 @@
 #include "color.h"
 using std::max;
 using std::vector;
+using std::string;
 
 
 void Mesh::beginRender()
 {
-	if (isTetraeder)
-		generateTetraeder();
-	else
-		generateTruncatedIcosahedron();
-	
-	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
 	computeBoundingGeometry();
 }
 
@@ -108,6 +103,9 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	} else {
 		info.normal = t.gnormal;
 	}
+	
+	info.dNdx = t.dNdx;
+	info.dNdy = t.dNdy;
 			
 	Vector uvA = uvs[t.t[0]];
 	Vector uvB = uvs[t.t[1]];
@@ -142,4 +140,136 @@ bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 	if (found)
 		info = closestInfo;
 	return found;
+}
+
+static int toInt(const string& s)
+{
+	if (s.empty()) return 0;
+	int x;
+	if (1 == sscanf(s.c_str(), "%d", &x)) return x;
+	return 0;
+}
+
+static double toDouble(const string& s)
+{
+	if (s.empty()) return 0;
+	double x;
+	if (1 == sscanf(s.c_str(), "%lf", &x)) return x;
+	return 0;
+}
+
+static void parseTrio(string s, int& vertex, int& uv, int& normal)
+{
+	vector<string> items = split(s, '/');
+	// "4" -> {"4"} , "4//5" -> {"4", "", "5" }
+	
+	vertex = toInt(items[0]);
+	uv = items.size() >= 2 ? toInt(items[1]) : 0;
+	normal = items.size() >= 3 ? toInt(items[2]) : 0;
+}
+
+static Triangle parseTriangle(string s0, string s1, string s2)
+{
+	// "3", "3/4", "3//5", "3/4/5"  (v/uv/normal)
+	Triangle T;
+	parseTrio(s0, T.v[0], T.t[0], T.n[0]);
+	parseTrio(s1, T.v[1], T.t[1], T.n[1]);
+	parseTrio(s2, T.v[2], T.t[2], T.n[2]);
+	return T;
+}
+
+static void solve2D(Vector A, Vector B, Vector C, double& x, double& y)
+{
+	// solve: x * A + y * B = C
+	double mat[2][2] = { { A.x, B.x }, { A.y, B.y } };
+	double h[2] = { C.x, C.y };
+	
+	double Dcr = mat[0][0] * mat[1][1] - mat[1][0] * mat[0][1];
+	x =         (     h[0] * mat[1][1] -      h[1] * mat[0][1]) / Dcr;
+	y =         (mat[0][0] *      h[1] - mat[1][0] *      h[0]) / Dcr;
+}
+
+bool Mesh::loadFromOBJ(const char* filename)
+{
+	FILE* f = fopen(filename, "rt");
+	
+	if (!f) return false;
+	
+	vertices.push_back(Vector(0, 0, 0));
+	uvs.push_back(Vector(0, 0, 0));
+	normals.push_back(Vector(0, 0, 0));
+	
+	char line[10000];
+	
+	while (fgets(line, sizeof(line), f)) {
+		if (line[0] == '#') continue;
+	
+		vector<string> tokens = tokenize(line); 
+		// "v 0 1    4" -> { "v", "0", "1", "4" }
+		
+		if (tokens.empty()) continue;
+		
+		if (tokens[0] == "v")
+			vertices.push_back(
+				Vector(
+					toDouble(tokens[1]),
+					toDouble(tokens[2]),
+					toDouble(tokens[3])));
+		
+		if (tokens[0] == "vn")
+			normals.push_back(
+				Vector(
+					toDouble(tokens[1]),
+					toDouble(tokens[2]),
+					toDouble(tokens[3])));
+
+		if (tokens[0] == "vt")
+			uvs.push_back(
+				Vector(
+					toDouble(tokens[1]),
+					toDouble(tokens[2]),
+					0));
+		
+		if (tokens[0] == "f") {
+			for (int i = 0; i < int(tokens.size()) - 3; i++) {
+				triangles.push_back(
+					parseTriangle(tokens[1], tokens[2 + i], tokens[3 + i])
+				);
+			}
+		}
+	}
+	
+	fclose(f);
+	
+	for (auto& t: triangles) {
+		Vector A = vertices[t.v[0]];
+		Vector B = vertices[t.v[1]];
+		Vector C = vertices[t.v[2]];
+		Vector AB = B - A;
+		Vector AC = C - A;
+		t.gnormal = AB ^ AC;
+		t.gnormal.normalize();
+		
+		// (1, 0) = px * texAB + qx * texAC; (1)
+		// (0, 1) = py * texAB + qy * texAC; (2)
+		
+		Vector texA = uvs[t.t[0]];
+		Vector texB = uvs[t.t[1]];
+		Vector texC = uvs[t.t[2]];
+		
+		Vector texAB = texB - texA;
+		Vector texAC = texC - texA;
+		
+		double px, py, qx, qy;
+		solve2D(texAB, texAC, Vector(1, 0, 0), px, qx); // (1)
+		solve2D(texAB, texAC, Vector(0, 1, 0), py, qy); // (2)
+		
+		t.dNdx = px * AB + qx * AC;
+		t.dNdy = py * AB + qy * AC;
+		t.dNdx.normalize();
+		t.dNdy.normalize();
+	}
+	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
+
+	return true;
 }

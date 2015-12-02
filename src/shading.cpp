@@ -257,3 +257,38 @@ Color Fresnel::sample(const IntersectionInfo& info)
 	double fr = fresnel(info.rayDir, n, eta);
 	return Color(fr, fr, fr);
 }
+
+BumpTexture::BumpTexture()
+{
+	bitmap = new Bitmap();
+	strength = 1.0;
+	scaling = 1.0;
+}
+BumpTexture::~BumpTexture()
+{
+	delete bitmap;
+}
+
+void BumpTexture::modifyNormal(IntersectionInfo& info)
+{
+	int x = (int) floor(info.u * scaling * bitmap->getWidth());
+	int y = (int) floor(info.v * scaling * bitmap->getHeight());
+	// 0 <= x < bitmap.width
+	// 0 <= y < bitmap.height
+	x = (x % bitmap->getWidth());
+	y = (y % bitmap->getHeight());
+	if (x < 0) x += bitmap->getWidth();
+	if (y < 0) y += bitmap->getHeight();
+	
+	Color bump = bitmap->getPixel(x, y);
+	float dx = bump.r;
+	float dy = bump.g;
+	
+	info.normal += (info.dNdx * dx + info.dNdy * dy) * strength;
+	info.normal.normalize();
+}
+
+void BumpTexture::beginRender()
+{
+	bitmap->differentiate();
+}

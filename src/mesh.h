@@ -31,6 +31,7 @@
 struct Triangle {
 	int v[3], n[3], t[3];
 	Vector gnormal;
+	Vector dNdx, dNdy;
 };
 
 // the C vertex of triangle with index 5 is:
@@ -50,19 +51,27 @@ class Mesh: public Geometry {
 public:
 	
 	bool faceted;
-	bool isTetraeder;
 
 	Mesh() {
 		faceted = false;
-		isTetraeder = false;
 		boundingGeom = NULL;
 	}
 	~Mesh();
 	
+	bool loadFromOBJ(const char* filename);
+	
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getBoolProp("faceted", &faceted);
-		pb.getBoolProp("isTetraeder", &isTetraeder);
+		char fn[256];
+		if (pb.getFilenameProp("file", fn)) {
+			if (!loadFromOBJ(fn)) {
+				pb.signalError("Could not parse OBJ file!");
+			}
+			
+		} else {
+			pb.requiredProp("file");
+		}
 	}
 	
 	void beginRender();

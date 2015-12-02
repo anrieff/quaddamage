@@ -38,6 +38,7 @@ struct IntersectionInfo {
 	double u, v;
 	Geometry* geom;
 	Vector rayDir;
+	Vector dNdx, dNdy;
 };
 
 /**
