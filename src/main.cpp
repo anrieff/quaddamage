@@ -35,7 +35,7 @@ int maxRaytraceDepth = 10;
 
 void setupScene()
 {
-	ambientLight = Color(1, 1, 1) * 0.1;
+	ambientLight = Color(1, 1, 1) * 0.1f;
 	camera.position = Vector(0, 60, -120);
 	camera.yaw = 0;
 	camera.pitch = -30;
@@ -54,7 +54,7 @@ void setupScene()
 	
 	Layered* layeredPod = new Layered;
 	layeredPod->addLayer(&pod, Color(1, 1, 1));
-	layeredPod->addLayer(new Refl(0.9), Color(1, 1, 1) * 0.02);
+	layeredPod->addLayer(new Refl(0.9), Color(1, 1, 1) * 0.02f);
 	
 	ceiling.texture = &ceilingTex;
 	nodes.push_back({ &plane, layeredPod });
@@ -70,8 +70,8 @@ void setupScene()
 	CsgOp* csg = new CsgMinus;
 	csg->left = &cube;
 	csg->right = &s1;
-	blue.color1 = Color(0.2, 0.4, 1.0);
-	blue.color2 = Color(0.4, 0.4, 0.4);
+	blue.color1 = Color(0.2f, 0.4f, 1.0f);
+	blue.color2 = Color(0.4f, 0.4f, 0.4f);
 	blue.scaling = 2;
 	
 	ball.texture = new BitmapTexture("data/world.bmp");

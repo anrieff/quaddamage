@@ -93,7 +93,7 @@ public:
 	bool boolOp(bool inA, bool inB) { return inA && !inB; }
 };
 
-struct Shader;
+class Shader;
 
 struct Node {
 	Geometry* geom;

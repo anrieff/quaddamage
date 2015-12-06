@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os, re, urllib2, platform, shutil, tarfile, zipfile
+import os, re, urllib2, platform, shutil, tarfile, zipfile, glob
 from sys import stdout
 
 
@@ -84,6 +84,7 @@ def unpack_archive(archive, target_dir):
 	arc.close()
 	print "Done."
 
+# setup on Windows:
 def setup_windows_SDKs(ide):
 	mkdir_if_doesnt_exist("SDK")
 	downloads_dir = os.path.join("SDK", "downloads")
@@ -96,14 +97,31 @@ def setup_windows_SDKs(ide):
 
 	if ide == "cb":
 		copy_and_maybe_overwrite("qdamage-win32.cbp", "qdamage.cbp")
+		if not os.path.exists("SDL.dll"):
+			shutil.copyfile(os.path.join("SDK", "SDL-1.2.15", "bin", "SDL.dll"), "SDL.dll")
 		print WIN_HELP % ("qdamage.cbp", "Code::Blocks")
 	else:
+		# In the Win32 version of the SDL package, the .h files aren't subdir'ed in
+		# a SDL/ directory inside SDL-1.2.15/include. Do it here:
+		include_dir = os.path.join("SDK", "SDL-1.2.15", "include")
+		sdl_dir = os.path.join(include_dir, "SDL")
+		mkdir_if_doesnt_exist(sdl_dir)
+		for fn in glob.glob(os.path.join(include_dir, "*.h")):
+			shutil.move(fn, sdl_dir)
+
+		# Project files
 		copy_and_maybe_overwrite("qdamage.sln.in", "qdamage.sln")
-		copy_and_maybe_overwrite("qdamage.vcprojx.in", "qdamage.vcprojx")
+		copy_and_maybe_overwrite("qdamage.vcxproj.in", "qdamage.vcxproj")
 		print WIN_HELP % ("qdamage.sln", "Visual C++")
 
-	if not os.path.exists("SDL.dll"):
-		shutil.copyfile(os.path.join("SDK", "SDL-1.2.15", "bin", "SDL.dll"), "SDL.dll")
+		# SDL.dll:
+		if not os.path.exists("SDL.dll"):
+			shutil.copyfile(os.path.join("SDK", "SDL-1.2.15", "lib", "x86", "SDL.dll"), "SDL.dll")
+
+		# All OpenEXR dlls:
+		for fn in glob.glob(os.path.join("SDK", "OpenEXR-VC", "bin", "*.dll")):
+			shutil.copyfile(fn, os.path.basename(fn))
+
 
 
 

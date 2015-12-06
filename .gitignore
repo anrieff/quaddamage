@@ -37,3 +37,13 @@ obj/
 
 # SDK directories:
 SDK/
+
+# Visual Studio:
+Debug/
+Release/
+*.suo
+*.sdf
+*.filters
+*.user
+*.sln
+*.vcxproj
