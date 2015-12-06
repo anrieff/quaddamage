@@ -31,7 +31,8 @@
 		<Compiler>
 			<Add option="-std=c++11" />
 			<Add option="-Wall" />
-			<Add directory="L:/SDL-1.2.15/include" />
+			<Add directory="SDK/SDL-1.2.15/include" />
+			<Add directory="SDK/OpenEXR-mingw/include/OpenEXR" />
 		</Compiler>
 		<Linker>
 			<Add library="mingw32" />
@@ -47,8 +48,8 @@
 			<Add library="Half" />
 			<Add library="IlmThread" />
 			<Add library="zlibstatic" />
-			<Add directory="L:/SDL-1.2.15/lib" />
-			<Add directory="L:/OpenEXR-mingw/lib" />
+			<Add directory="SDK/SDL-1.2.15/lib" />
+			<Add directory="SDK/OpenEXR-mingw/lib" />
 		</Linker>
 		<Unit filename="src/bitmap.cpp" />
 		<Unit filename="src/bitmap.h" />
