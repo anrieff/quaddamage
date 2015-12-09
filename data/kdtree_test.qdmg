@@ -76,9 +76,9 @@ Lambert teapot_tex {
  * 3) change the "useKDTree" flag to test the speed with or without the K-d tree
 */
 Mesh teapot {
-	file "geom/teapot_lowres.obj"
-//	file "geom/teapot_hires.obj"
-//	useKDTree true
+//	file "geom/teapot_lowres.obj"
+	file "geom/teapot_hires.obj"
+	useKDTree true
 }
 
 Node teapot {

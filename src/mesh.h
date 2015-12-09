@@ -29,21 +29,59 @@
 #include "vector.h"
 #include "bbox.h"
 
+struct KDTreeNode {
+	Axis axis; // AXIS_NONE if this is a leaf node
+	double splitPos;
+	union {
+		std::vector<int>* triangles;
+		KDTreeNode* children;
+	};
+	//
+	void initLeaf(const std::vector<int>& triangles)
+	{
+		axis = AXIS_NONE;
+		this->triangles = new std::vector<int>(triangles);
+	}
+	
+	void initTreeNode(Axis axis, double splitPos)
+	{
+		this->axis = axis;
+		this->splitPos = splitPos;
+		this->children = new KDTreeNode[2];
+	}
+	~KDTreeNode()
+	{
+		if (axis == AXIS_NONE)
+			delete triangles;
+		else
+			delete [] children;
+	}
+};
+
 class Mesh: public Geometry {
 	std::vector<Vector> vertices;
 	std::vector<Vector> normals;
 	std::vector<Vector> uvs;
 	std::vector<Triangle> triangles;
 	BBox bbox;
+	
+	KDTreeNode* kdroot;
+	bool useKDTree;
+	int maxDepthSum;
+	int numNodes;
 
 	void computeBoundingGeometry();
 	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
+	void buildKD(KDTreeNode* node, BBox bbox, const std::vector<int>& triangleList, int depth);
+	bool intersectKD(KDTreeNode* node, BBox bbox, const Ray& ray, IntersectionInfo& info);
 public:
 	
 	bool faceted;
 
 	Mesh() {
 		faceted = false;
+		useKDTree = true;
+		kdroot = NULL;
 	}
 	~Mesh();
 	
@@ -61,6 +99,7 @@ public:
 		} else {
 			pb.requiredProp("file");
 		}
+		pb.getBoolProp("useKDTree", &useKDTree);
 	}
 	
 	void beginRender();

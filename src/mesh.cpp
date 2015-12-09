@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <algorithm>
+#include <SDL/SDL.h>
 #include "mesh.h"
 #include "constants.h"
 #include "color.h"
@@ -36,6 +37,54 @@ using std::string;
 void Mesh::beginRender()
 {
 	computeBoundingGeometry();
+	kdroot = NULL;
+	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
+	maxDepthSum = 0;
+	numNodes = 0;
+	if (triangles.size() > 50 && useKDTree) {
+		Uint32 startBuild = SDL_GetTicks();
+		kdroot = new KDTreeNode;
+		vector<int> triangleList(triangles.size());
+		std::iota(triangleList.begin(), triangleList.end(), 0);
+		buildKD(kdroot, bbox, triangleList, 0);
+		Uint32 endBuild = SDL_GetTicks();
+		printf(" -> KDTree built in %.2lfs, avg depth = %.1lf\n", (endBuild - startBuild) / 1000.0, maxDepthSum / double(numNodes));
+	}
+}
+
+void Mesh::buildKD(KDTreeNode* node, BBox bbox, const vector<int>& triangleList, int depth)
+{
+	if (depth > MAX_TREE_DEPTH || int(triangleList.size()) < TRIANGLES_PER_LEAF) {
+		maxDepthSum += depth;
+		numNodes++;
+		node->initLeaf(triangleList);
+		return;
+	}
+	Axis axis = (Axis) (depth % 3); // TODO: could be better
+	double leftLimit = bbox.vmin[axis];
+	double rightLimit = bbox.vmax[axis];
+	
+	double optimalSplitPos = (leftLimit + rightLimit) * 0.5; // TODO: could be MUCH better!
+	
+	BBox bboxLeft, bboxRight;
+	vector<int> trianglesLeft, trianglesRight;
+	
+	bbox.split(axis, optimalSplitPos, bboxLeft, bboxRight);
+	for (auto triangleIdx: triangleList) {
+		Triangle& T = this->triangles[triangleIdx];
+		const Vector& A = this->vertices[T.v[0]];
+		const Vector& B = this->vertices[T.v[1]];
+		const Vector& C = this->vertices[T.v[2]];
+		
+		if (bboxLeft.intersectTriangle(A, B, C))
+			trianglesLeft.push_back(triangleIdx);
+		
+		if (bboxRight.intersectTriangle(A, B, C))
+			trianglesRight.push_back(triangleIdx);
+	}
+	node->initTreeNode(axis, optimalSplitPos);
+	buildKD(&node->children[0],  bboxLeft,  trianglesLeft, depth + 1);
+	buildKD(&node->children[1], bboxRight, trianglesRight, depth + 1);
 }
 
 void Mesh::computeBoundingGeometry()
@@ -49,6 +98,7 @@ void Mesh::computeBoundingGeometry()
 
 Mesh::~Mesh()
 {
+	if (kdroot) delete kdroot;
 }
 
 inline double det(const Vector& a, const Vector& b, const Vector& c)
@@ -109,7 +159,11 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	Vector D = ray.dir;
 	
 	double Dcr = det(B-A, C-A, -D);
+
 	if (fabs(Dcr) < 1e-12) return false;
+
+	double gamma = det(B-A, C-A, H) / Dcr;
+	if (gamma < 0 || gamma > info.distance) return false;
 	
 	double lambda2 = det(H, C-A, -D) / Dcr;
 	double lambda3 = det(B-A, H, -D) / Dcr;
@@ -117,11 +171,7 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	if (lambda2 < 0 || lambda3 < 0) return false;
 	if (lambda2 > 1 || lambda3 > 1) return false;
 	if (lambda2 + lambda3 > 1) return false;
-	
-	double gamma = det(B-A, C-A, H) / Dcr;
-	
-	if (gamma < 0) return false;
-	
+		
 	info.distance = gamma;
 	info.ip = ray.start + ray.dir * gamma;
 	if (!faceted) {
@@ -150,27 +200,58 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	return true;
 }
 
+bool Mesh::intersectKD(KDTreeNode* node, BBox bbox, const Ray& ray, IntersectionInfo& info)
+{
+	if (node->axis == AXIS_NONE) {
+		bool found = false;
+		for (int& triIdx: (*node->triangles)) {
+			if (intersectTriangle(ray, triangles[triIdx], info))
+				found = true;
+		}
+		return (found && bbox.inside(info.ip));
+	} else {
+		BBox childBBox[2];
+		bbox.split(node->axis, node->splitPos, childBBox[0], childBBox[1]);
+		
+		int childOrder[2] = { 0, 1 };
+		if (ray.start[node->axis] > node->splitPos) {
+			std::swap(childOrder[0], childOrder[1]);
+		}
+		
+		for (int i = 0; i < 2; i++) {
+			const BBox& subBBox = childBBox[childOrder[i]];
+			if (subBBox.testIntersect(ray)) {
+				if (intersectKD(
+						&node->children[childOrder[i]], 
+						subBBox, ray, info))
+					return true;
+			}
+		}
+		return false;
+	}
+}
 
 bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 {
 	if (!bbox.testIntersect(ray))
 		return false;
-	bool found = false;
-	IntersectionInfo closestInfo;
 	
-	closestInfo.distance = INF;
-	
-	for (auto& T: triangles) {
-		if (intersectTriangle(ray, T, info) &&
-			info.distance < closestInfo.distance) {
+	if (kdroot) {
+		info.distance = INF;
+		return intersectKD(kdroot, bbox, ray, info);
+	} else {
+		bool found = false;
+		
+		info.distance = INF;
+		
+		for (auto& T: triangles) {
+			if (intersectTriangle(ray, T, info)) {
 				found = true;
-				closestInfo = info;
+			}
 		}
+		
+		return found;
 	}
-	
-	if (found)
-		info = closestInfo;
-	return found;
 }
 
 static int toInt(const string& s)
@@ -300,7 +381,6 @@ bool Mesh::loadFromOBJ(const char* filename)
 		t.dNdx.normalize();
 		t.dNdy.normalize();
 	}
-	printf("Mesh loaded, %d triangles\n", int(triangles.size()));
 
 	return true;
 }
