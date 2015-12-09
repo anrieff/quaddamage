@@ -107,7 +107,7 @@ int renderSceneThread(void* /*unused*/)
 	return 0;
 }
 
-const char* DEFAULT_SCENE = "data/heightfield.qdmg";
+const char* DEFAULT_SCENE = "data/kdtree_test.qdmg";
 
 int main ( int argc, char** argv )
 {
@@ -122,7 +122,7 @@ int main ( int argc, char** argv )
 	
 	scene.beginRender();
 	
-	setWindowCaption("Quad Damage: preparing...");
+	setWindowCaption("Quad Damage: rendering...");
 	Uint32 startTicks = SDL_GetTicks();
 	renderScene_threaded();
 	Uint32 elapsedMs = SDL_GetTicks() - startTicks;
