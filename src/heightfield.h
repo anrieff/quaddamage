@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2015 by Veselin Georgiev, Slavomir Kaslev et al    *
+ *   Copyright (C) 2009-2013 by Veselin Georgiev, Slavomir Kaslev et al    *
  *   admin@raytracing-bg.net                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -17,55 +17,26 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-/**
- * @File mesh.h
- * @Brief Contains the Mesh class.
- */
-#ifndef __MESH_H__
-#define __MESH_H__
+#ifndef __HEIGHTFIELD_H__
+#define __HEIGHTFIELD_H__
 
-#include <vector>
 #include "geometry.h"
-#include "vector.h"
 #include "bbox.h"
 
-class Mesh: public Geometry {
-	std::vector<Vector> vertices;
-	std::vector<Vector> normals;
-	std::vector<Vector> uvs;
-	std::vector<Triangle> triangles;
+class Heightfield: public Geometry {
+	float* heights, *maxH;
+	Vector* normals;
 	BBox bbox;
-
-	void computeBoundingGeometry();
-	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
+	int W, H;
+	float getHeight(int x, int y) const;
+	Vector getNormal(int x, int y) const;
 public:
-	
-	bool faceted;
-
-	Mesh() {
-		faceted = false;
-	}
-	~Mesh();
-	
-	bool loadFromOBJ(const char* filename);
-	
-	void fillProperties(ParsedBlock& pb)
-	{
-		pb.getBoolProp("faceted", &faceted);
-		char fn[256];
-		if (pb.getFilenameProp("file", fn)) {
-			if (!loadFromOBJ(fn)) {
-				pb.signalError("Could not parse OBJ file!");
-			}
-			
-		} else {
-			pb.requiredProp("file");
-		}
-	}
-	
-	void beginRender();
-	
+	Heightfield();
+	~Heightfield();
 	bool intersect(const Ray& ray, IntersectionInfo& info);
+	bool isInside(const Vector& p ) const { return false; }
+	void fillProperties(ParsedBlock& pb);
 };
 
-#endif // __MESH_H__
+#endif // __HEIGHTFIELD_H__
+

@@ -40,31 +40,62 @@ void Mesh::beginRender()
 
 void Mesh::computeBoundingGeometry()
 {
-	Vector O(0, 0, 0);
+	bbox.makeEmpty();
 	
 	for (auto& v: vertices) {
-		O += v;
+		bbox.add(v);
 	}
-	
-	O = O / vertices.size();
-	
-	double maxRadius = 0;
-	for (auto&v : vertices) {
-		double distance = (O - v).length();
-		maxRadius = max(maxRadius, distance);
-	}
-	
-	boundingGeom = new Sphere(O, maxRadius);
 }
 
 Mesh::~Mesh()
 {
-	if (boundingGeom) delete boundingGeom;
 }
 
 inline double det(const Vector& a, const Vector& b, const Vector& c)
 {
 	return (a^b) * c;
+}
+
+bool intersectTriangleFast(const Ray& ray, const Vector& A, const Vector& B, const Vector& C, double& dist)
+{
+	Vector AB = B - A;
+	Vector AC = C - A;
+	Vector D = -ray.dir;
+	//              0               A
+	Vector H = ray.start - A;
+
+	/* 2. Solve the equation:
+	 *
+	 * A + lambda2 * AB + lambda3 * AC = ray.start + gamma * ray.dir
+	 *
+	 * which can be rearranged as:
+	 * lambda2 * AB + lambda3 * AC + gamma * D = ray.start - A
+	 *
+	 * Which is a linear system of three rows and three unknowns, which we solve using Carmer's rule
+	 */
+
+	// Find the determinant of the left part of the equation:
+	Vector ABcrossAC = AB ^ AC;
+	double Dcr = ABcrossAC * D;
+	
+	// are the ray and triangle parallel?
+	if (fabs(Dcr) < 1e-12) return false;
+	
+	double lambda2 = ( ( H ^ AC) * D ) / Dcr;
+	double lambda3 = ( (AB ^  H) * D ) / Dcr;
+	double gamma   = ( ABcrossAC * H ) / Dcr;
+
+	// is intersection behind us, or too far?
+	if (gamma < 0 || gamma > dist) return false;
+
+	// is the intersection outside the triangle?
+	if (lambda2 < 0 || lambda2 > 1 || lambda3 < 0 || lambda3 > 1 || lambda2 + lambda3 > 1)
+		return false;
+
+	dist = gamma;
+	
+	
+	return true;
 }
 
 bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info)
@@ -122,7 +153,7 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 
 bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
 {
-	if (boundingGeom->intersect(ray, info) == false)
+	if (!bbox.testIntersect(ray))
 		return false;
 	bool found = false;
 	IntersectionInfo closestInfo;

@@ -186,4 +186,30 @@ public:
 	}
 };
 
+class Const: public Shader {
+	Color color;
+public:
+	Const(Color color = Color(0.5f, 0.5f, 0.5f)): color(color) {}
+	Color shade(const Ray& ray, const IntersectionInfo& info) { return color; }
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &color);
+	}
+};
+
+// a texture that generates a slight random bumps on any geometry, which computes dNdx, dNdy
+class Bumps: public Texture {
+	float strength;
+public:
+	Bumps() { strength = 0; }
+	
+	void modifyNormal(IntersectionInfo& data);
+	Color sample(const IntersectionInfo& info); // never called
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getFloatProp("strength", &strength);
+	}
+	
+};
+
 #endif // __SHADING_H__

@@ -52,7 +52,7 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
 	Vector v2 = info.ip - scene.settings.lightPos; // from light towards the intersection point
-	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
+	Vector v1 = faceforward(ray.dir, info.normal); // orient so that surface points to the light
 	v2.normalize();
 	double lambertCoeff = dot(v1, -v2);
 	
@@ -66,7 +66,7 @@ Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 	Color diffuse = texture ? texture->sample(info) : this->color;
 	
 	Vector v2 = info.ip - scene.settings.lightPos; // from light towards the intersection point
-	Vector v1 = faceforward(v2, info.normal); // orient so that surface points to the light
+	Vector v1 = faceforward(ray.dir, info.normal); // orient so that surface points to the light
 	v2.normalize();
 	double lambertCoeff = dot(v1, -v2);
 	double fromLight = getLightContrib(info);
@@ -291,4 +291,26 @@ void BumpTexture::modifyNormal(IntersectionInfo& info)
 void BumpTexture::beginRender()
 {
 	bitmap->differentiate();
+}
+
+void Bumps::modifyNormal(IntersectionInfo& data)
+{
+	if (strength > 0) {
+		float freqX[3] = { 0.5, 1.21, 1.9 }, freqZ[3] = { 0.4, 1.13, 1.81 };
+		float fm = 0.2;
+		float intensityX[3] = { 0.1, 0.08, 0.05 }, intensityZ[3] = { 0.1, 0.08, 0.05 };
+		double dx = 0, dy = 0;
+		for (int i = 0; i < 3; i++) {
+			dx += sin(fm * freqX[i] * data.u) * intensityX[i] * strength; 
+			dy += sin(fm * freqZ[i] * data.v) * intensityZ[i] * strength;
+		}
+		data.normal += dx * data.dNdx + dy * data.dNdy;
+		data.normal.normalize();
+	}
+}
+
+Color Bumps::sample(const IntersectionInfo& info)
+{
+	// never called
+	return Color(0, 0, 0);
 }
