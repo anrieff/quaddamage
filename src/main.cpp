@@ -82,24 +82,29 @@ void render()
 		{ 0.3, 0.3 },
 		{ 0.6, 0.6 },
 	};
-	Uint32 lastTicks = SDL_GetTicks();
-	for (int y = 0; y < frameHeight(); y++) {
-		for (int x = 0; x < frameWidth(); x++) {
-			if (scene.settings.wantAA) {
-				Color sum(0, 0, 0);
-				for (int i = 0; i < COUNT_OF(kernel); i++)
-					sum += raytrace(scene.camera->getScreenRay(x + kernel[i][0], y + kernel[i][1]));
-				vfb[y][x] = sum / double(COUNT_OF(kernel));
-			} else {
-				Ray ray = scene.camera->getScreenRay(x, y);
-				vfb[y][x] = raytrace(ray);
+	vector<Rect> buckets = getBucketsList();
+	for (Rect& r: buckets) {
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++) {
+				if (scene.settings.wantAA) {
+					Color sum(0, 0, 0);
+					for (int i = 0; i < COUNT_OF(kernel); i++)
+						sum += raytrace(scene.camera->getScreenRay(x + kernel[i][0], y + kernel[i][1]));
+					vfb[y][x] = sum / double(COUNT_OF(kernel));
+				} else {
+					Ray ray = scene.camera->getScreenRay(x, y);
+					vfb[y][x] = raytrace(ray);
+				}
 			}
-		}
-		if (SDL_GetTicks() - lastTicks > 100) {
-			displayVFB(vfb);
-			lastTicks = SDL_GetTicks();
-		}
+		if (!displayVFBRect(r, vfb)) return;
 	}
+}
+
+int renderSceneThread(void* /*unused*/)
+{
+	render();
+	rendering = false;
+	return 0;
 }
 
 const char* DEFAULT_SCENE = "data/heightfield.qdmg";
@@ -113,12 +118,13 @@ int main ( int argc, char** argv )
 	}
 	
 	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
-	setWindowCaption("Quad Damage: rendering...");
+	setWindowCaption("Quad Damage: preparing...");
 	
 	scene.beginRender();
 	
+	setWindowCaption("Quad Damage: preparing...");
 	Uint32 startTicks = SDL_GetTicks();
-	render();
+	renderScene_threaded();
 	Uint32 elapsedMs = SDL_GetTicks() - startTicks;
 	printf("Render took %.2fs\n", elapsedMs / 1000.0f);
 	setWindowCaption("Quad Damage: rendered in %.2fs\n", elapsedMs / 1000.0f);

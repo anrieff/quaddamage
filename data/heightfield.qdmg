@@ -3,8 +3,8 @@
 //
 
 GlobalSettings {
-	frameWidth      640
-	frameHeight     480
+	frameWidth      800
+	frameHeight     600
 	ambientLight    (0.25, 0.25, 0.25)
 	lightPos	(6000, 2000, -30)
 	lightIntensity  50000000
