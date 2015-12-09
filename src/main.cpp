@@ -102,10 +102,12 @@ void render()
 	}
 }
 
+const char* DEFAULT_SCENE = "data/heightfield.qdmg";
+
 int main ( int argc, char** argv )
 {
 	initRandom(42);
-	if (!scene.parseScene("data/bumpmap.qdmg")) {
+	if (!scene.parseScene(DEFAULT_SCENE)) {
 		printf("Could not parse the scene!\n");
 		return -1;
 	}

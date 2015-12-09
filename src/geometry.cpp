@@ -44,6 +44,8 @@ bool Plane::intersect(const Ray& ray, IntersectionInfo& info)
 	if (fabs(info.ip.x) > limit || fabs(info.ip.z) > limit) return false;
 	info.u = info.ip.x;
 	info.v = info.ip.z;
+	info.dNdx = Vector(1, 0, 0);
+	info.dNdy = Vector(0, 0, 1);
 	info.geom = this;
 	return true;
 }
@@ -109,8 +111,14 @@ bool Cube::intersectSide(double level, double start, double dir, const Ray& ray,
 		info.ip = ip;
 		info.distance = distance;
 		info.normal = normal;
-		info.u = info.ip.x + info.ip.z;
-		info.v = info.ip.y;
+		if (normal.y == 0) {
+			info.u = info.ip.x + info.ip.z;
+			info.v = info.ip.y;
+		} else {
+			// top or bottom:
+			info.u = info.ip.x;
+			info.v = info.ip.z;
+		}
 		info.geom = this;
 		return true;
 	}
