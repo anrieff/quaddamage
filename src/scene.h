@@ -43,7 +43,7 @@ class SceneParser;
 class Geometry;
 class Intersectable;
 class Shader;
-class Node;
+struct Node;
 class Texture;
 class Environment;
 class Camera;

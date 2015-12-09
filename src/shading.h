@@ -72,7 +72,7 @@ public:
 	{
 		pb.getDoubleProp("scaling", &scaling);
 		scaling = 1/scaling;
-		if (!pb.getBitmapFileProp("file", *bitmap));
+		if (!pb.getBitmapFileProp("file", *bitmap))
 			pb.requiredProp("file");
 	}
 };
@@ -90,7 +90,7 @@ public:
 	{
 		pb.getDoubleProp("strength", &strength);
 		pb.getDoubleProp("scaling", &scaling);
-		if (!pb.getBitmapFileProp("file", *bitmap));
+		if (!pb.getBitmapFileProp("file", *bitmap))
 			pb.requiredProp("file");
 	}
 };

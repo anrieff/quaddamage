@@ -90,6 +90,9 @@
     <ClCompile Include="src\geometry.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix.cpp" />
+    <ClCompile Include="src\mesh.cpp" />
+    <ClCompile Include="src\random_generator.cpp" />
+    <ClCompile Include="src\scene.cpp" />
     <ClCompile Include="src\sdl.cpp" />
     <ClCompile Include="src\shading.cpp" />
     <ClCompile Include="src\util.cpp" />
@@ -102,8 +105,12 @@
     <ClInclude Include="src\environment.h" />
     <ClInclude Include="src\geometry.h" />
     <ClInclude Include="src\matrix.h" />
+    <ClInclude Include="src\mesh.h" />
+    <ClInclude Include="src\random_generator.h" />
+    <ClInclude Include="src\scene.h" />
     <ClInclude Include="src\sdl.h" />
     <ClInclude Include="src\shading.h" />
+    <ClInclude Include="src\transform.h" />
     <ClInclude Include="src\util.h" />
     <ClInclude Include="src\vector.h" />
   </ItemGroup>

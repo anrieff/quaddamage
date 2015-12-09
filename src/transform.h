@@ -30,8 +30,7 @@
 
 /// A transformation class, which implements model-view transform. Objects can be
 /// arbitrarily scaled, rotated and translated.
-class Transform {
-public:
+struct Transform {
 	Transform() { reset(); }
 
 	void reset() {
