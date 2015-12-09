@@ -27,6 +27,7 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string>
+#include <stdio.h>
 
 #include "constants.h"
 

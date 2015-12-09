@@ -132,7 +132,7 @@ public:
 	bool boolOp(bool inA, bool inB) { return inA && !inB; }
 };
 
-struct Shader;
+class Shader;
 
 struct Node: public Intersectable, public SceneElement {
 	Geometry* geom;

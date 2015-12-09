@@ -34,3 +34,16 @@ qdamage.depend
 # Build directories
 bin/
 obj/
+
+# SDK directories:
+SDK/
+
+# Visual Studio:
+Debug/
+Release/
+*.suo
+*.sdf
+*.filters
+*.user
+*.sln
+*.vcxproj
