@@ -136,7 +136,7 @@ bool Heightfield::intersect(const Ray& ray, IntersectionInfo& info)
 
 		if (useOptimization) {
 			int k = 0;
-			while (k < maxK && p.y + ray.dir.y * (1 << k) > getHighest(x0, z0, k))
+			while (k < maxK && min(p.y, p.y + ray.dir.y * (1 << k)) > getHighest(x0, z0, k))
 				k++;
 			k--;
 			if (k >= 0) {
