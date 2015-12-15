@@ -8,6 +8,7 @@ GlobalSettings {
 	ambientLight    (0.25, 0.25, 0.25)
 	lightPos	(6000, 2000, -30)
 	lightIntensity  50000000
+	wantAA false
 }
 
 // Island - sunset view
@@ -117,6 +118,7 @@ Lambert island_shader {
 Heightfield island {
 	file "texture/heightfield.bmp"
 	blur 2.5
+	useOptimization true
 }
 
 Node island {

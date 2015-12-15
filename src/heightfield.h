@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Veselin Georgiev, Slavomir Kaslev et al    *
+ *   Copyright (C) 2009-2015 by Veselin Georgiev, Slavomir Kaslev et al    *
  *   admin@raytracing-bg.net                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -17,6 +17,10 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
+/**
+ * @File heightfield.h
+ * @Brief Contains the Heightfield geometry class.
+ */
 #ifndef __HEIGHTFIELD_H__
 #define __HEIGHTFIELD_H__
 
@@ -29,10 +33,22 @@ class Heightfield: public Geometry {
 	BBox bbox;
 	int W, H;
 	float getHeight(int x, int y) const;
-	Vector getNormal(int x, int y) const;
+	float getHighest(int x, int y, int k) const;
+	Vector getNormal(float x, float y) const;
+	
+	bool useOptimization;
+	struct HighStruct {
+		float h[16];
+	};
+	HighStruct* highMap;
+	int maxK;
+	
+	void buildHighMap();
+	
 public:
 	Heightfield();
 	~Heightfield();
+	void beginRender();
 	bool intersect(const Ray& ray, IntersectionInfo& info);
 	bool isInside(const Vector& p ) const { return false; }
 	void fillProperties(ParsedBlock& pb);

@@ -1,5 +1,5 @@
 /***************************************************************************
- *   Copyright (C) 2009-2013 by Veselin Georgiev, Slavomir Kaslev et al    *
+ *   Copyright (C) 2009-2015 by Veselin Georgiev, Slavomir Kaslev et al    *
  *   admin@raytracing-bg.net                                               *
  *                                                                         *
  *   This program is free software; you can redistribute it and/or modify  *
@@ -17,21 +17,27 @@
  *   Free Software Foundation, Inc.,                                       *
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
-
+/**
+ * @File heightfield.cpp
+ * @Brief Implementation of the Heightfield.
+ */
 #include "heightfield.h"
 #include "bitmap.h"
+#include <SDL/SDL.h>
 
 Heightfield::Heightfield()
 {
 	heights = NULL;
 	normals = NULL;
 	maxH = NULL;
+	highMap = NULL;
 }
 Heightfield::~Heightfield()
 {
 	if (heights) delete[] heights;
 	if (normals) delete[] normals;
 	if (maxH) delete[] maxH;
+	if (highMap) delete[] highMap;
 }
 
 
@@ -39,10 +45,58 @@ float Heightfield::getHeight(int x, int y) const
 {
 	x = min(W - 1, x);
 	y = min(H - 1, y);
+	x = max(0, x);
+	y = max(0, y);
 	return heights[y * W + x];
 }
 
-Vector Heightfield::getNormal(int x, int y) const
+float Heightfield::getHighest(int x, int y, int k) const
+{
+	x = min(W - 1, x);
+	y = min(H - 1, y);
+	x = max(0, x);
+	y = max(0, y);
+	return highMap[y * W + x].h[k];
+}
+
+
+void Heightfield::buildHighMap()
+{
+	maxK = ceil(log(max(W, H)) / log(2));
+	
+	highMap = new HighStruct[W * H];
+	
+	for (int y = 0; y < H; y++) {
+		for (int x = 0; x < W; x++) {
+			float& thisHeight = highMap[y * W + x].h[0];
+			thisHeight = getHeight(x, y);
+			for (int dy = -1; dy <= 1; dy++)
+				for (int dx = -1; dx <= 1; dx++)
+					thisHeight = max(thisHeight, getHeight(x + dx, y + dy));
+		}
+	}
+	
+	// r = 1 -> square 3x3
+	// r = 2 -> square 5x5
+	// r = 4 -> square 9x9
+	// r = 2^k -> square (2^(k+1) + 1)x(2^(k+1) + 1)
+	// r = 2^k -> offset-> 2^(k - 1) 
+	for (int k = 1; k < maxK; k++) {
+		for (int y = 0; y < H; y++) {
+			for (int x = 0; x < W; x++) {
+				int offset = (1 << (k - 1));
+				highMap[y * W + x].h[k] = 
+					max(
+						max(getHighest(x - offset, y - offset, k - 1),
+							getHighest(x + offset, y - offset, k - 1)),
+						max(getHighest(x - offset, y + offset, k - 1),
+							getHighest(x + offset, y + offset, k - 1)));
+			}
+		}
+	}
+}
+
+Vector Heightfield::getNormal(float x, float y) const
 {
 	// we have precalculated the normals at each integer position.
 	// Here, we do bilinear filtering on the four nearest integral positions:
@@ -80,6 +134,19 @@ bool Heightfield::intersect(const Ray& ray, IntersectionInfo& info)
 		int z0 = (int) floor(p.z);
 		if (x0 < 0 || x0 >= W || z0 < 0 || z0 >= H) break; // if outside the [0..W)x[0..H) rect, get out
 
+		if (useOptimization) {
+			int k = 0;
+			while (k < maxK && p.y + ray.dir.y * (1 << k) > getHighest(x0, z0, k))
+				k++;
+			k--;
+			if (k >= 0) {
+				p += ray.dir * (1 << k);
+				x0 = (int) floor(p.x);
+				z0 = (int) floor(p.z);
+				if (x0 < 0 || x0 >= W || z0 < 0 || z0 >= H) break; // if outside the [0..W)x[0..H) rect, get out
+			}
+		}
+		
 		// calculate how much we need to go along ray.dir until we hit the next X voxel boundary:
 		double lx = ray.dir.x > 0 ? (ceil(p.x) - p.x) * mx : (floor(p.x) - p.x) * mx;
 		// same as lx, for the Z direction:
@@ -121,6 +188,7 @@ bool Heightfield::intersect(const Ray& ray, IntersectionInfo& info)
 
 void Heightfield::fillProperties(ParsedBlock& pb)
 {
+	pb.getBoolProp("useOptimization", &useOptimization);
 	Bitmap bmp;
 	if (!pb.getBitmapFileProp("file", bmp)) pb.requiredProp("file");
 	W = bmp.getWidth();
@@ -201,4 +269,12 @@ void Heightfield::fillProperties(ParsedBlock& pb)
 	for (int x = 0; x < W; x++) normals[(H - 1) * W + x] = normals[(H - 2) * W + x];
 }
 
-
+void Heightfield::beginRender()
+{
+	if (useOptimization) {
+		Uint32 startBuild = SDL_GetTicks();
+		buildHighMap();
+		Uint32 endBuild = SDL_GetTicks();
+		printf("Built %dx%d heightmap acceleration struct in %.2lfs.\n", W, H, (endBuild - startBuild) / 1000.0);
+	}
+}
