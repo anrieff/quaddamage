@@ -88,6 +88,7 @@
     <ClCompile Include="src\camera.cpp" />
     <ClCompile Include="src\environment.cpp" />
     <ClCompile Include="src\geometry.cpp" />
+    <ClCompile Include="src\heightfield.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix.cpp" />
     <ClCompile Include="src\mesh.cpp" />
@@ -98,12 +99,14 @@
     <ClCompile Include="src\util.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\bbox.h" />
     <ClInclude Include="src\bitmap.h" />
     <ClInclude Include="src\camera.h" />
     <ClInclude Include="src\color.h" />
     <ClInclude Include="src\constants.h" />
     <ClInclude Include="src\environment.h" />
     <ClInclude Include="src\geometry.h" />
+    <ClInclude Include="src\heightfield.h" />
     <ClInclude Include="src\matrix.h" />
     <ClInclude Include="src\mesh.h" />
     <ClInclude Include="src\random_generator.h" />
