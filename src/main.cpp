@@ -112,6 +112,7 @@ const char* DEFAULT_SCENE = "data/heightfield.qdmg";
 int main ( int argc, char** argv )
 {
 	initRandom(42);
+	Color::init_sRGB_cache();
 	const char* sceneFile = argc == 2 ? argv[1] : DEFAULT_SCENE;
 	if (!scene.parseScene(sceneFile)) {
 		printf("Could not parse the scene!\n");
