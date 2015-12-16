@@ -313,3 +313,33 @@ void Bitmap::differentiate()
 	}
 	std::swap(this->data, bumpTex.data);
 }
+
+void Bitmap::remapRGB(std::function<float(float)> remapFn)
+{
+	for (int i = 0; i < width * height; i++) {
+		data[i].r = remapFn(data[i].r);
+		data[i].g = remapFn(data[i].g);
+		data[i].b = remapFn(data[i].b);
+	}
+}
+
+void Bitmap::decompressGamma_sRGB(void)
+{
+	remapRGB([] (float x) {
+		if (x == 0) return 0.0f;
+		if (x == 1) return 1.0f;
+		if (x <= 0.04045f)
+			return x / 12.92f;
+		else
+			return powf((x + 0.055f) / 1.055f, 2.4f);
+	});
+}
+
+void Bitmap::decompressGamma(float gamma)
+{
+	remapRGB([gamma] (float x) {
+		if (x == 0) return 0.0f;
+		if (x == 1) return 1.0f;
+		return powf(x, gamma);
+	});
+}

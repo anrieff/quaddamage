@@ -90,6 +90,7 @@ BitmapTexture::BitmapTexture()
 {
 	bitmap = new Bitmap();
 	scaling = 1.0; 
+	assumedGamma = 1;
 }
 BitmapTexture::~BitmapTexture() { delete bitmap; }
 

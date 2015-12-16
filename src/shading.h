@@ -24,9 +24,10 @@
 #ifndef __SHADING_H__
 #define __SHADING_H__
 
+#include "color.h"
+#include "bitmap.h"
 #include "geometry.h"
 #include "scene.h"
-#include "color.h"
 
 class Shader: public SceneElement {
 public:
@@ -64,6 +65,7 @@ class Bitmap;
 class BitmapTexture: public Texture {
 	Bitmap* bitmap;
 	double scaling;
+	float assumedGamma;
 public:
 	BitmapTexture();
 	~BitmapTexture();
@@ -74,6 +76,14 @@ public:
 		scaling = 1/scaling;
 		if (!pb.getBitmapFileProp("file", *bitmap))
 			pb.requiredProp("file");
+		pb.getFloatProp("assumedGamma", &assumedGamma);
+		
+		if (assumedGamma != 1) {
+			if (assumedGamma == 2.2f)
+				bitmap->decompressGamma_sRGB();
+			else if (assumedGamma > 0 && assumedGamma < 10)
+				bitmap->decompressGamma(assumedGamma);
+		}
 	}
 };
 
