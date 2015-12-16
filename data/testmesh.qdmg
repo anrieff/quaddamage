@@ -1,0 +1,160 @@
+//
+// An example scene, which represents the same scenery as what the initializeScene()
+// function used to create around the tag 'homework6'
+// Namely:
+//  1) A shiny floor, made of a woody Lambert shader and a mirror layer on top
+//  2) A soccer ball
+//  3) A shiny ball using a glossy shader
+//  4) Three small phong-lit balls, using red, yellow and green colors
+
+// 1. First, some global settings
+GlobalSettings {
+	frameWidth          640
+	frameHeight         480
+	ambientLight (0.08, 0.08, 0.08)
+//	interactive true
+	lightPos (-750, 1200, -750)
+	lightIntensity 1200000
+	// if you want to render it interactively, but in a window, use
+	// fullscreen false
+}
+
+// 2. A camera
+Camera camera {
+	position     (90, 160, -320)
+	aspectRatio   1.33333
+	yaw      15
+	pitch   -10
+	roll     0
+	fov     75
+//	focalPlaneDist 300
+//	fNumber 2.0
+//	dof     false
+//	numSamples 100
+}
+
+// 3. The floor node:
+Plane floor {
+	y      -0.01
+	limit    200
+}
+
+BitmapTexture wood_tex {
+	file "texture/wood.bmp"
+	scaling 0.0025
+}
+
+Lambert floor_diffuse {
+	texture wood_tex
+}
+
+Refl mirror {
+}
+
+Fresnel mirror_fresnel {
+	ior 1.33
+}
+
+Layered floor_shader {
+	layer floor_diffuse (1, 1, 1)
+	layer mirror        (1, 1, 1) mirror_fresnel
+}
+
+Node floor {
+	geometry floor
+	shader   floor_shader
+}
+
+Refl refl {
+}
+
+Refr refr {
+	ior 1.6
+}
+
+Fresnel fresnel {
+	ior 1.6
+}
+
+Layered glass {
+	layer refr (1, 1, 1)
+	layer refl (1, 1, 1) fresnel
+}
+
+// 4. The mesh:
+Mesh mesh {
+//	file        "geom/3pyramid.obj"
+//	file        "geom/teapot_lowres.obj"
+//	file        "geom/heart.obj"
+	file		"geom/newwine.obj"
+//	file	 	"geom/truncated_cube.obj"
+//	backfaceCulling false
+	faceted     false
+}
+
+CheckerTexture checker {
+	color1 (0.70, 0.70, 0.70)
+	color2 (0.15, 0.15, 0.15)
+	scaling 100
+}
+
+Lambert checker_shader {
+	texture checker
+}
+
+BitmapTexture heart_lava {
+	file "texture/zar-texture.bmp"
+}
+
+Lambert heart_shader {
+	texture heart_lava
+}
+
+Refl reflection {
+}
+
+Refr refraction {
+	ior 1.5
+}
+
+Fresnel fresnel {
+	ior 1.5
+}
+
+Layered glass {
+	layer refraction (1, 1, 1)
+	layer reflection (1, 1, 1) fresnel
+}
+
+CheckerTexture checker1 {
+	color1 (0.2, 0.2, 0.2)
+	color2 (0.8, 0.8, 0.8)
+	scaling 10
+}
+
+Lambert lambert {
+	color (0.7, 0.7, 0.7)
+	texture checker
+}
+
+
+BumpTexture bumptex {
+	file "texture/zar-bump.bmp"
+	strength 15
+}
+
+
+Node soccer_ball {
+	geometry     mesh
+	shader       glass
+	scale        (230, 230, 230)
+	rotate       (135, 0, 0)
+	translate    (0, 0, 0)
+//	bump bumptex
+}
+
+
+// 7. And, finally, an environment
+CubemapEnvironment {
+	folder "env/forest"
+}
