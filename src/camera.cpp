@@ -35,8 +35,8 @@ void Camera::beginFrame()
 	double hypotLength = sqrt(sqr(aspectRatio) + sqr(1.0));
 	double scaleFactor = wantedLength / hypotLength;
 	
-	x2d *= scaleFactor*1.5;
-	y2d *= scaleFactor*1.5;
+	x2d *= scaleFactor;
+	y2d *= scaleFactor;
 	
 	topLeft = Vector(-x2d, y2d, 1);
 	topRight = Vector(x2d, y2d, 1);
