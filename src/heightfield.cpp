@@ -106,6 +106,8 @@ Vector Heightfield::getNormal(float x, float y) const
 	float q = (y - y0);
 	int x1 = min(W - 1, x0 + 1);
 	int y1 = min(H - 1, y0 + 1);
+	x0 = min(W - 1, x0);
+	y0 = min(H - 1, y0);
 	x0 = max(0, x0);
 	y0 = max(0, y0);
 	Vector v = 
