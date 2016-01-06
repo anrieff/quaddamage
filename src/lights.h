@@ -75,7 +75,10 @@ public:
 class RectLight: public Light {
 	int xSubd, ySubd;
 	Transform T;
+	Vector center, a, b, c;
+	float area;
 public:
+	void beginFrame();
 	void fillProperties(ParsedBlock& pb)
 	{
 		Light::fillProperties(pb);
