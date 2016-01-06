@@ -817,6 +817,7 @@ GlobalSettings::GlobalSettings()
 	maxTraceDepth = 4;
 	ambientLight.makeZero();
 	saturation = 0;
+	wantPrepass = true;
 }
 
 void GlobalSettings::fillProperties(ParsedBlock& pb)

@@ -144,6 +144,23 @@ void render()
 {
 	scene.beginFrame();
 	vector<Rect> buckets = getBucketsList();
+	
+	if (scene.settings.wantPrepass || scene.settings.gi) {
+		// We render the whole screen in three passes.
+		// 1) First pass - use very coarse resolution rendering, tracing a single ray for a 16x16 block:
+		for (Rect& r: buckets) {
+			for (int dy = 0; dy < r.h; dy += 16) {
+				int ey = min(r.h, dy + 16);
+				for (int dx = 0; dx < r.w; dx += 16) {
+					int ex = min(r.w, dx + 16);
+					Color c = raytraceSinglePixel(r.x0 + dx + ex / 2, r.y0 + dy + ey / 2);
+					if (!drawRect(Rect(r.x0 + dx, r.y0 + dy, r.x0 + ex, r.y0 + ey), c))
+						return;
+				}
+			}
+		}
+	}
+	
 	for (Rect& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {

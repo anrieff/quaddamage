@@ -254,6 +254,8 @@ struct GlobalSettings: public SceneElement {
 	
 	bool dbg;                    //!< A debugging flag (if on, various raytracing-related procedures will dump debug info to stdout).
 	float saturation; 
+	
+	bool wantPrepass;            //!< Coarse resolution pre-pass required (defaults to true)
 		
 	GlobalSettings();
 	void fillProperties(ParsedBlock& pb);
