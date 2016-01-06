@@ -51,6 +51,9 @@ void Mesh::beginRender()
 		Uint32 endBuild = SDL_GetTicks();
 		printf(" -> KDTree built in %.2lfs, avg depth = %.1lf\n", (endBuild - startBuild) / 1000.0, maxDepthSum / double(numNodes));
 	}
+	
+	// if the object is set to be smooth-shaded, but it lacks normals, we have to revert it to "faceted":
+	if (normals.size() <= 1) faceted = true;
 }
 
 void Mesh::buildKD(KDTreeNode* node, BBox bbox, const vector<int>& triangleList, int depth)
