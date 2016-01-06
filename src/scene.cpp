@@ -816,8 +816,9 @@ GlobalSettings::GlobalSettings()
 	dbg = false;
 	maxTraceDepth = 4;
 	ambientLight.makeZero();
-	saturation = 0;
+	saturation = 1;
 	wantPrepass = true;
+	gi = false;
 }
 
 void GlobalSettings::fillProperties(ParsedBlock& pb)
@@ -829,6 +830,7 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getBoolProp("dbg", &dbg);
 	pb.getBoolProp("wantAA", &wantAA);
 	pb.getFloatProp("saturation", &saturation, 0, 1);
+	pb.getBoolProp("wantPrepass", &wantPrepass);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)
