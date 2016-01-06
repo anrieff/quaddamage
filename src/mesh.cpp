@@ -204,7 +204,7 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	return true;
 }
 
-bool Mesh::intersectKD(KDTreeNode* node, BBox bbox, const Ray& ray, IntersectionInfo& info)
+bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, IntersectionInfo& info)
 {
 	if (node->axis == AXIS_NONE) {
 		bool found = false;
@@ -222,14 +222,23 @@ bool Mesh::intersectKD(KDTreeNode* node, BBox bbox, const Ray& ray, Intersection
 			std::swap(childOrder[0], childOrder[1]);
 		}
 		
-		for (int i = 0; i < 2; i++) {
-			const BBox& subBBox = childBBox[childOrder[i]];
-			if (subBBox.testIntersect(ray)) {
-				if (intersectKD(
-						&node->children[childOrder[i]], 
-						subBBox, ray, info))
-					return true;
-			}
+		BBox& firstBB = childBBox[childOrder[0]];
+		BBox& secondBB = childBBox[childOrder[1]];
+		KDTreeNode& firstChild = node->children[childOrder[0]];
+		KDTreeNode& secondChild = node->children[childOrder[1]];
+		// if the ray intersects the common wall between the two sub-boxes, then it invariably
+		// intersects both boxes (we can skip the testIntersect() checks):
+		// (see http://raytracing-bg.net/?q=node/68 )
+		if (bbox.intersectWall(node->axis, node->splitPos, ray)) {
+			if (intersectKD(&firstChild, firstBB, ray, info)) return true;
+			return intersectKD(&secondChild, secondBB, ray, info);
+		} else {
+			// if the wall isn't hit, then we intersect exclusively one of the sub-boxes;
+			// test one, if the test fails, then it's in the other:
+			if (firstBB.testIntersect(ray))
+				return intersectKD(&firstChild, firstBB, ray, info);
+			else
+				return intersectKD(&secondChild, secondBB, ray, info);
 		}
 		return false;
 	}

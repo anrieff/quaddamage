@@ -206,6 +206,26 @@ struct BBox {
 		left.vmax[axis] = where;
 		right.vmin[axis] = where;
 	}
+	/// Checks if a ray intersects a single wall inside the BBox
+	/// Consider the intersection of the splitting plane as described in split(), and the BBox
+	/// (i.e., the "split wall"). We want to check if the ray intersects that wall.
+	inline bool intersectWall(Axis axis, double where, const Ray& ray) const
+	{
+	   if (fabs(ray.dir[axis]) < 1e-9) return (fabs(ray.start[axis] - where) < 1e-9);
+	   int u = (axis == 0) ? 1 : 0;
+	   int v = (axis == 2) ? 1 : 2;
+	   double toGo = where - ray.start[axis];
+	   double rdirInAxis = 1.0 / ray.dir[axis];
+	   // check if toGo and dirInAxis are of opposing signs:
+	   if ((toGo * rdirInAxis) < 0) return false;
+	   double d = toGo * rdirInAxis;
+	   double tu = ray.start[u] + ray.dir[u] * d;
+	   if (vmin[u] <= tu && tu <= vmax[u]) {
+		   double tv = ray.start[v] + ray.dir[v] * d;
+		   return (vmin[v] <= tv && tv <= vmax[v]);
+	   }
+	   return false;
+	}
 };
 
 #endif // __BBOX_H__
