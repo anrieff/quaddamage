@@ -297,9 +297,9 @@ void BumpTexture::beginRender()
 void Bumps::modifyNormal(IntersectionInfo& data)
 {
 	if (strength > 0) {
-		float freqX[3] = { 0.5, 1.21, 1.9 }, freqZ[3] = { 0.4, 1.13, 1.81 };
-		float fm = 0.2;
-		float intensityX[3] = { 0.1, 0.08, 0.05 }, intensityZ[3] = { 0.1, 0.08, 0.05 };
+		float freqX[3] = { 0.5f, 1.21f, 1.9f }, freqZ[3] = { 0.4f, 1.13f, 1.81f };
+		float fm = 0.2f;
+		float intensityX[3] = { 0.1f, 0.08f, 0.05f }, intensityZ[3] = { 0.1f, 0.08f, 0.05f };
 		double dx = 0, dy = 0;
 		for (int i = 0; i < 3; i++) {
 			dx += sin(fm * freqX[i] * data.u) * intensityX[i] * strength; 
