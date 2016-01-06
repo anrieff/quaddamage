@@ -1,8 +1,7 @@
 GlobalSettings {
 	frameWidth          1024
 	frameHeight         768
-	//ambientLight        (0.075, 0.075, 0.075)
-	ambientLight        (0, 0, 0)
+	ambientLight        (0.075, 0.075, 0.075)
 	maxTraceDepth 8
 	wantAA false
 }
@@ -25,7 +24,7 @@ RectLight l2 {
 	translate	(50, 50, -20)
 	scale   (8, 8, 8)
 	color	(1, 1, 1)
-	power   1100.5
+	power   62.5
 	rotate  (0, 45, 0)
 }
 
@@ -33,8 +32,8 @@ RectLight l_small {
 	translate  (0, 28, 50)
 	rotate     (0, -62, 0)
 	scale      (10, 10, 10)
-	color	   (1, 0.2, 1)
-	power      2000
+	color	   (1, 1, 1)
+	power      40
 	xSubd  4
 	ySubd  4
 }
@@ -69,8 +68,8 @@ BumpTexture diceBump {
 //////////////////////// TEXTURES & SHADERS  ///////////////////////////////
 
 CheckerTexture checker {
-	color1   (0.50, 0.77, 0.77)
-	color2   (0.20, 0.20, 0.20)
+	color1   (0.55, 0.55, 0.12)
+	color2   (0.12, 0.12, 0.12)
 	scaling  0.75
 }
 
