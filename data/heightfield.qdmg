@@ -6,9 +6,12 @@ GlobalSettings {
 	frameWidth      992
 	frameHeight     744
 	ambientLight    (0.25, 0.25, 0.25)
-	lightPos	(6000, 2000, -30)
-	lightIntensity  50000000
 	wantAA true
+}
+
+PointLight sun {
+	pos	(6000, 2000, -30)
+	power 50000000
 }
 
 // Island - sunset view

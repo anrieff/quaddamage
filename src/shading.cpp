@@ -124,16 +124,17 @@ BitmapTexture::~BitmapTexture() { delete bitmap; }
 
 Color BitmapTexture::sample(const IntersectionInfo& info)
 {
-	int x = (int) floor(info.u * scaling * bitmap->getWidth());
-	int y = (int) floor(info.v * scaling * bitmap->getHeight());
-	// 0 <= x < bitmap.width
-	// 0 <= y < bitmap.height
-	x = (x % bitmap->getWidth());
-	y = (y % bitmap->getHeight());
+	float x = fmod(info.u * scaling * bitmap->getWidth(), bitmap->getWidth());
+	float y = fmod(info.v * scaling * bitmap->getHeight(), bitmap->getHeight());
 	if (x < 0) x += bitmap->getWidth();
 	if (y < 0) y += bitmap->getHeight();
 	
-	return bitmap->getPixel(x, y);
+	// 0 <= x < bitmap.width
+	// 0 <= y < bitmap.height
+	if (x < 0) x += bitmap->getWidth();
+	if (y < 0) y += bitmap->getHeight();
+	
+	return bitmap->getFilteredPixel(x, y);
 }
 
 extern Color raytrace(Ray ray);
@@ -300,16 +301,12 @@ BumpTexture::~BumpTexture()
 
 void BumpTexture::modifyNormal(IntersectionInfo& info)
 {
-	int x = (int) floor(info.u * scaling * bitmap->getWidth());
-	int y = (int) floor(info.v * scaling * bitmap->getHeight());
-	// 0 <= x < bitmap.width
-	// 0 <= y < bitmap.height
-	x = (x % bitmap->getWidth());
-	y = (y % bitmap->getHeight());
+	float x = fmod(info.u * scaling * bitmap->getWidth(), bitmap->getWidth());
+	float y = fmod(info.v * scaling * bitmap->getHeight(), bitmap->getHeight());
 	if (x < 0) x += bitmap->getWidth();
 	if (y < 0) y += bitmap->getHeight();
 	
-	Color bump = bitmap->getPixel(x, y);
+	Color bump = bitmap->getFilteredPixel(x, y);
 	float dx = bump.r;
 	float dy = bump.g;
 	
