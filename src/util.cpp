@@ -65,11 +65,3 @@ bool fileExists(const char* fn)
 	struct stat st;
 	return (0 == stat(temp, &st));
 }
-
-void genDiscPoint(double maxRadius, double& x, double& y)
-{
-	double angle = randomFloat() * 2 * PI;
-	double radius = randomFloat() * maxRadius;
-	x = cos(angle) * radius;
-	y = sin(angle) * radius;
-}

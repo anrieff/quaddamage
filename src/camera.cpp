@@ -28,6 +28,7 @@
 #include "sdl.h"
 #include "geometry.h"
 #include "scene.h"
+#include "random_generator.h"
 using std::min;
 
 void Camera::beginFrame()
@@ -101,7 +102,10 @@ Ray Camera::getDOFRay(double xScreen, double yScreen, int whichCamera)
 	Vector target = ray.start + ray.dir * M;
 	
 	double u, v;
-	genDiscPoint(apertureSize, u, v);
+	Random& rnd = getRandomGen();
+	rnd.unitDiscSample(u, v);
+	u *= apertureSize;
+	v *= apertureSize;
 	
 	ray.start = ray.start + u * upDir + v * rightDir;
 	ray.dir = target - ray.start;

@@ -119,9 +119,10 @@ Color renderAAPixel(int x, int y)
 
 Color renderDOFPixel(int x, int y)
 {
+	Random& rnd = getRandomGen();
 	Color sum(0, 0, 0);
 	for (int i = 0; i < scene.camera->numSamples; i++) {
-		sum += raytraceSinglePixel(x + randomFloat(), y + randomFloat());
+		sum += raytraceSinglePixel(x + rnd.randdouble(), y + rnd.randdouble());
 	}
 	return sum / scene.camera->numSamples;
 }

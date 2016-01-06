@@ -25,6 +25,7 @@
 #include "shading.h"
 #include "bitmap.h"
 #include "lights.h"
+#include "random_generator.h"
 
 bool visibilityCheck(const Vector& start, const Vector& end);
 
@@ -149,6 +150,7 @@ Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
 		
 		return raytrace(newRay) * multiplier;
 	} else {
+		Random& rnd = getRandomGen();
 		Color result(0, 0, 0);
 		int count = numSamples;
 		if (ray.depth > 0)
@@ -156,11 +158,13 @@ Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
 		for (int i = 0; i < count; i++) {
 			Vector a, b;
 			orthonormalSystem(n, a, b);
-			double x, y;
-			genDiscPoint(1, x, y);
+			double x, y, scaling;
+			
+			rnd.unitDiscSample(x, y);
 			//
-			x *= tan((1 - glossiness) * PI/2);
-			y *= tan((1 - glossiness) * PI/2);
+			scaling = tan((1 - glossiness) * PI/2);
+			x *= scaling;
+			y *= scaling;
 			
 			Vector modifiedNormal = n + a * x + b * y;
 

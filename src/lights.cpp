@@ -1,6 +1,7 @@
 
 #include "lights.h"
 #include "util.h"
+#include "random_generator.h"
 
 int RectLight::getNumSamples()
 {
@@ -10,8 +11,9 @@ int RectLight::getNumSamples()
 void RectLight::getNthSample(int sampleIdx, const Vector& shadePos,
 						  Vector& samplePos, Color& color)
 {
-	double x = (sampleIdx % xSubd + randomFloat()) / xSubd;
-	double y = (sampleIdx / xSubd + randomFloat()) / ySubd;
+	Random& rnd = getRandomGen();
+	double x = (sampleIdx % xSubd + rnd.randfloat()) / xSubd;
+	double y = (sampleIdx / xSubd + rnd.randfloat()) / ySubd;
 	
 	samplePos = Vector(x - 0.5, 0, y - 0.5);
 	
