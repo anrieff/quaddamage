@@ -13,10 +13,13 @@ GlobalSettings {
 	frameHeight         480
 	ambientLight (0.08, 0.08, 0.08)
 //	interactive true
-	lightPos (-750, 1200, -750)
-	lightIntensity 1200000
 	// if you want to render it interactively, but in a window, use
 	// fullscreen false
+}
+
+PointLight sun {
+	pos (-750, 1200, -750)
+	power 1200000
 }
 
 // 2. A camera
