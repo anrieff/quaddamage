@@ -819,6 +819,7 @@ GlobalSettings::GlobalSettings()
 	saturation = 1;
 	wantPrepass = true;
 	gi = false;
+	numPaths = 10;
 }
 
 void GlobalSettings::fillProperties(ParsedBlock& pb)
@@ -831,6 +832,8 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getBoolProp("wantAA", &wantAA);
 	pb.getFloatProp("saturation", &saturation, 0, 1);
 	pb.getBoolProp("wantPrepass", &wantPrepass);
+	pb.getBoolProp("gi", &gi);
+	pb.getIntProp("numPaths", &numPaths, 1);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)

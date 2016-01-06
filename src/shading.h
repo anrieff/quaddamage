@@ -29,7 +29,15 @@
 #include "geometry.h"
 #include "scene.h"
 
-class Shader: public SceneElement {
+class BRDF {
+public:
+	virtual Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
+	
+	virtual void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+							Vector& w_out, Color& color, float& pdf);
+};
+
+class Shader: public SceneElement, public BRDF {
 public:
 	virtual Color shade(const Ray& ray, const IntersectionInfo& info) = 0;
 	virtual ~Shader() {}
@@ -111,7 +119,11 @@ public:
 	Color color;
 	Texture* texture;
 	Lambert() { color.makeZero(); texture = NULL; }
-	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	Color shade(const Ray& ray, const IntersectionInfo& info);
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+							Vector& w_out, Color& color, float& pdf);
+	
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getColorProp("color", &color);
@@ -148,6 +160,9 @@ public:
 	Refl(double mult = 0.99, double glossiness = 1.0, int numSamples = 32): 
 			multiplier(mult), glossiness(glossiness), numSamples(numSamples) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+							Vector& w_out, Color& color, float& pdf);
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("multiplier", &multiplier);
@@ -163,6 +178,9 @@ public:
 	double multiplier;
 	Refr(double ior = 1.33, double mult = 0.99): ior(ior), multiplier(mult) {}
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
+	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
+	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
+							Vector& w_out, Color& color, float& pdf);
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("multiplier", &multiplier);

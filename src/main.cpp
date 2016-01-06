@@ -59,6 +59,63 @@ Color raytrace(Ray ray)
 	}
 }
 
+Color pathtrace(Ray ray, const Color& pathMultiplier, Random& rnd)
+{
+	if (ray.depth > scene.settings.maxTraceDepth) return Color(0, 0, 0);
+	if (pathMultiplier.intensity() < 0.001f) return Color(0, 0, 0);
+	Node* closestNode = NULL;
+	double closestDist = INF;
+	IntersectionInfo closestInfo;
+	for (auto& node: scene.nodes) {
+		IntersectionInfo info;
+		if (!node->intersect(ray, info)) continue;
+		
+		if (info.distance < closestDist) {
+			closestDist = info.distance;
+			closestNode = node;
+			closestInfo = info;
+		}
+	}
+	// check if the closest intersection point is actually a light:
+	bool hitLight = false;
+	Color hitLightColor;
+	for (auto& light: scene.lights) {
+		if (light->intersect(ray, closestDist)) {
+			hitLight = true;
+			hitLightColor = light->getColor();
+		}
+	}
+	if (hitLight) {
+		return hitLightColor * pathMultiplier;
+	}
+
+	// check if we hit the sky:
+	if (closestNode == NULL) {
+		if (scene.environment)
+			return scene.environment->getEnvironment(ray.dir) * pathMultiplier;
+		else return Color(0, 0, 0);
+	} 
+	
+	closestInfo.rayDir = ray.dir;
+	if (closestNode->bump)
+		closestNode->bump->modifyNormal(closestInfo);
+	
+	Vector w_out;
+	Color brdf;
+	float pdf;
+	closestNode->shader->spawnRay(closestInfo, ray.dir, w_out, brdf, pdf);
+	
+	Ray newRay = ray;
+	newRay.depth++;
+	newRay.dir = w_out;
+	newRay.start = closestInfo.ip + w_out * 1e-6;
+	
+	return pathtrace(newRay, pathMultiplier * brdf / pdf, rnd);
+	
+	//return closestNode->shader->shade(ray, closestInfo);
+}
+
+
 bool visibilityCheck(const Vector& start, const Vector& end)
 {
 	Ray ray;
@@ -95,12 +152,21 @@ Color raytraceSinglePixel(double x, double y)
 		[](double x, double y, int whichCamera) {
 			return scene.camera->getScreenRay(x, y, whichCamera);
 		};
+	
+	auto trace = scene.settings.gi ? 
+		[](const Ray& ray) { 
+			Random& rnd = getRandomGen();
+			return pathtrace(ray, Color(1, 1, 1), rnd); 
+		} :
+		[](const Ray& ray) { 
+			return raytrace(ray); 
+		};
 		
 	if (scene.camera->stereoSeparation > 0) {
 		Ray leftRay = getRay(x, y, CAMERA_LEFT);
 		Ray rightRay= getRay(x, y, CAMERA_RIGHT);
-		Color colorLeft = raytrace(leftRay);
-		Color colorRight = raytrace(rightRay);
+		Color colorLeft = trace(leftRay);
+		Color colorRight = trace(rightRay);
 		if (scene.settings.saturation != 1) {
 			colorLeft.adjustSaturation(scene.settings.saturation);
 			colorRight.adjustSaturation(scene.settings.saturation);
@@ -110,7 +176,7 @@ Color raytraceSinglePixel(double x, double y)
 		      + colorRight* scene.camera->rightMask;
 	} else {
 		Ray ray = getRay(x, y, CAMERA_CENTRAL);
-		return raytrace(ray);
+		return trace(ray);
 	}
 }
 
@@ -139,10 +205,26 @@ Color renderDOFPixel(int x, int y)
 	return sum / scene.camera->numSamples;
 }
 
+Color renderGIPixel(int x, int y)
+{
+	Color sum(0, 0, 0);
+	int N = scene.settings.numPaths;
+	
+	Ray ray = scene.camera->getScreenRay(x, y);
+	Random rnd = getRandomGen();
+	for (int i = 0; i < N; i++) {
+		sum += pathtrace(ray, Color(1, 1, 1), rnd); 
+	}
+	
+	return sum / N;
+}
+
 Color renderPixel(int x, int y)
 {
 	if (scene.camera->dof) {
 		return renderDOFPixel(x, y);
+	} else if (scene.settings.gi) {
+		return renderGIPixel(x, y);
 	} else {
 		if (scene.settings.wantAA) {
 			return renderAAPixel(x, y);
@@ -189,7 +271,7 @@ int renderSceneThread(void* /*unused*/)
 	return 0;
 }
 
-const char* DEFAULT_SCENE = "data/boxed.qdmg";
+const char* DEFAULT_SCENE = "data/smallpt.qdmg";
 
 int main ( int argc, char** argv )
 {

@@ -92,12 +92,12 @@ struct Color {
 		b = _b;
 	}
 	/// get the intensity of the color (direct)
-	float intensity(void)
+	float intensity(void) const
 	{
 		return (r + g + b) / 3;
 	}
 	/// get the perceptual intensity of the color
-	float intensityPerceptual(void)
+	float intensityPerceptual(void) const
 	{
 		return (r * 0.299 + g * 0.587 + b * 0.114);
 	}

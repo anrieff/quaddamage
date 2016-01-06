@@ -27,6 +27,19 @@
 #include "lights.h"
 #include "random_generator.h"
 
+Color BRDF::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	return Color(1, 0, 0);
+}
+
+void BRDF::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Vector& w_out, Color& color, float& pdf)
+{
+	w_out = Vector(1, 0, 0);
+	color = Color(1, 0, 0);
+	pdf = 1;
+}
+
 bool visibilityCheck(const Vector& start, const Vector& end);
 
 Color CheckerTexture::sample(const IntersectionInfo& info)
@@ -73,6 +86,49 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 	return result;
 	
 }
+
+Color Lambert::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	Color diffuse = texture ? texture->sample(x) : this->color;
+
+	return diffuse * (1 / PI);
+}
+
+static Vector hemisphereSample(const Vector& normal)
+{
+	Random& rnd = getRandomGen();
+	
+	double u = rnd.randdouble();
+	double v = rnd.randdouble();
+	
+	double theta = 2 * PI * u;
+	double phi   = acos(2 * v - 1);
+	
+	Vector vec(
+		cos(theta) * cos(phi),
+		sin(phi),
+		sin(theta) * cos(phi)
+	);
+	
+	if (dot(vec, normal) < 0)
+		vec = -vec;
+		
+	return vec;
+}
+
+void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Vector& w_out, Color& out_color, float& pdf)
+{
+	out_color = texture ? texture->sample(x) : this->color;
+	
+	out_color *= (1 / PI);
+	
+	pdf = 1 / PI;
+	
+	Vector normal = x.normal;
+	w_out = hemisphereSample(normal);
+}
+
 
 Color Phong::shade(const Ray& ray, const IntersectionInfo& info)
 {
@@ -180,6 +236,24 @@ Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
 	}
 }
 
+Color Refl::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	return Color(0, 0, 0);
+}
+
+void Refl::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Vector& w_out, Color& out_color, float& pdf)
+{
+	if (glossiness != 1)
+		return BRDF::spawnRay(x, w_in, w_out, out_color, pdf);
+
+	Vector n = faceforward(w_in, x.normal);
+
+	w_out = reflect(w_in, n);
+	out_color = Color(1, 1, 1) * multiplier;
+	pdf = 1;
+}
+
 inline Vector refract(const Vector& i, const Vector& n, double ior)
 {
 	double NdotI = (double) (i * n);
@@ -207,6 +281,32 @@ Color Refr::shade(const Ray& ray, const IntersectionInfo& info)
 	newRay.depth++;
 	return raytrace(newRay) * multiplier;
 }
+
+Color Refr::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
+{
+	return Color(0, 0, 0);
+}
+
+void Refr::spawnRay(const IntersectionInfo& x, const Vector& w_in,
+						Vector& w_out, Color& out_color, float& pdf)
+{
+	Vector refr;
+	if (dot(w_in, x.normal) < 0) {
+		// entering the geometry
+		refr = refract(w_in, x.normal, 1 / ior);
+	} else {
+		// leaving the geometry
+		refr = refract(w_in, -x.normal, ior);
+	}
+	if (refr.lengthSqr() == 0) {
+		pdf = 0;
+		return;
+	}
+	w_out = refr;
+	out_color = Color(1, 1, 1) * multiplier;
+	pdf = 1;
+}
+
 
 void Layered::addLayer(Shader* shader, Color blend, Texture* tex)
 {

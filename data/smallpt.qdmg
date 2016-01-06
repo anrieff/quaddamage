@@ -8,8 +8,8 @@ GlobalSettings {
 	frameHeight         480
 	maxTraceDepth 8
 	ambientLight (0.1, 0.1, 0.1)
-	//gi off
-	//numPaths 40
+	gi 			on
+	numPaths 	512
 }
 
 Camera camera {

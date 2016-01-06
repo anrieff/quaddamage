@@ -256,6 +256,7 @@ struct GlobalSettings: public SceneElement {
 	float saturation; 
 	
 	bool wantPrepass;            //!< Coarse resolution pre-pass required (defaults to true)
+	int numPaths;                //!< paths per pixel in path tracing
 		
 	GlobalSettings();
 	void fillProperties(ParsedBlock& pb);
