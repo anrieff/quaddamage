@@ -12,6 +12,7 @@
 #include "mesh.h"
 #include "random_generator.h"
 #include "scene.h"
+#include "lights.h"
 using std::vector;
 
 
@@ -33,6 +34,17 @@ Color raytrace(Ray ray)
 			closestInfo = info;
 		}
 	}
+	// check if the closest intersection point is actually a light:
+	bool hitLight = false;
+	Color hitLightColor;
+	for (auto& light: scene.lights) {
+		if (light->intersect(ray, closestDist)) {
+			hitLight = true;
+			hitLightColor = light->getColor();
+		}
+	}
+	if (hitLight) return hitLightColor;
+
 	// check if we hit the sky:
 	if (closestNode == NULL) {
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
