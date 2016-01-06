@@ -28,20 +28,43 @@
 #include "matrix.h"
 #include "scene.h"
 
+enum {
+	CAMERA_CENTRAL,
+	CAMERA_LEFT,
+	CAMERA_RIGHT,
+};
+
 class Camera: public SceneElement {
 	Vector topLeft, topRight, bottomLeft;
 	Matrix rotation;
+	double apertureSize;
+	Vector frontDir, upDir, rightDir;
 public:
 	Vector position;
 	double yaw, pitch, roll; //!< in degrees
 	double aspectRatio;
 	double fov;              //!< in degrees
+	bool dof;
+	double fNumber;
+	double focalPlaneDist;
+	int numSamples;
+	bool autofocus;
+	double stereoSeparation;
+	Color leftMask, rightMask;
 	
 	Camera() {
 		position.makeZero();
 		yaw = pitch = roll = 0;
 		aspectRatio = 4./3.; 
 		fov = 90;
+		dof = false;
+		fNumber = 2.0;
+		numSamples = 32;
+		focalPlaneDist = 100;
+		autofocus = false;
+		stereoSeparation = 0.0;
+		leftMask = Color(1, 0, 0);
+		rightMask = Color(0, 1, 1);
 	}
 	
 	void fillProperties(ParsedBlock& pb)
@@ -53,12 +76,23 @@ public:
 		pb.getDoubleProp("yaw", &yaw);
 		pb.getDoubleProp("pitch", &pitch, -90, 90);
 		pb.getDoubleProp("roll", &roll);
+		pb.getBoolProp("dof", &dof);
+		pb.getDoubleProp("fNumber", &fNumber, 0);
+		pb.getIntProp("numSamples", &numSamples, 1);
+		pb.getDoubleProp("focalPlaneDist", &focalPlaneDist, 0.1);
+		pb.getBoolProp("autofocus", &autofocus);
+		pb.getDoubleProp("stereoSeparation", &stereoSeparation, 0.0);
+		pb.getColorProp("leftMask", &leftMask);
+		pb.getColorProp("rightMask", &rightMask);
+		
+		apertureSize = 4.5 / fNumber;
 	}
 	
 	ElementType getElementType() const { return ELEM_CAMERA; }
 	void beginFrame();
 	
-	Ray getScreenRay(double xScreen, double yScreen);
+	Ray getScreenRay(double xScreen, double yScreen, int whichCamera = CAMERA_CENTRAL);
+	Ray getDOFRay(double xScreen, double yScreen, int whichCamera = CAMERA_CENTRAL);
 };
 
 #endif // __CAMERA_H__

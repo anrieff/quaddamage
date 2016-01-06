@@ -151,7 +151,7 @@ bool intersectTriangleFast(const Ray& ray, const Vector& A, const Vector& B, con
 
 bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info)
 {
-	if (dot(ray.dir, t.gnormal) > 0) return false;
+	if (backfaceCulling && dot(ray.dir, t.gnormal) > 0) return false;
 	Vector A = vertices[t.v[0]];
 	Vector B = vertices[t.v[1]];
 	Vector C = vertices[t.v[2]];

@@ -1,3 +1,4 @@
+
 /***************************************************************************
  *   Copyright (C) 2009-2015 by Veselin Georgiev, Slavomir Kaslev et al    *
  *   admin@raytracing-bg.net                                               *
@@ -18,58 +19,77 @@
  *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
  ***************************************************************************/
 /**
- * @File util.cpp
- * @Brief a few useful short functions
+ * @File heightfield.h
+ * @Brief Contains the Heightfield geometry class.
  */
+#ifndef __LIGHTS_H__
+#define __LIGHTS_H__
 
-#include <stdio.h>
-#include <string.h>
-#include <ctype.h>
+#include "scene.h"
+#include "transform.h"
 
-#include <cstring>
-#include <sys/types.h>
-#include <sys/stat.h>
-
-#include <string>
-#include "util.h"
-using namespace std;
-
-string upCaseString(string s)
-{
-	for (int i = 0; i < (int) s.length(); i++)
-		s[i] = toupper(s[i]);
-	return s;
-}
-
-string extensionUpper(const char* fileName)
-{
-	int l = (int) strlen(fileName);
-	if (l < 2) return "";
+class Light: public SceneElement {
+protected:
+	Color color;
+	float power;
+public:
+	Light() { color = Color(1, 1, 1); power = 1; }
+	virtual ~Light() {}
 	
-	for (int i = l - 1; i >= 0; i--) {
-		if (fileName[i] == '.') {
-			string result = "";
-			for  (int j = i + 1; j < l; j++) result += toupper(fileName[j]);
-			return result;
-		}
+	ElementType getElementType() const { return ELEM_LIGHT; }
+	
+	virtual int getNumSamples() = 0;
+	
+	virtual void getNthSample(int sampleIdx, const Vector& shadePos,
+							  Vector& samplePos, Color& color) = 0;
+
+	void fillProperties(ParsedBlock& pb)
+	{
+		pb.getColorProp("color", &color);
+		pb.getFloatProp("power", &power);
 	}
-	return "";
-}
+};
 
-bool fileExists(const char* fn)
-{
-	char temp[512];
-	strcpy(temp, fn);
-	int l = (int) strlen(temp);
-	if (l && temp[l - 1] == '/') temp[--l] = 0;
-	struct stat st;
-	return (0 == stat(temp, &st));
-}
+class PointLight: public Light {
+	Vector pos;
+public:
+	void fillProperties(ParsedBlock& pb)
+	{
+		Light::fillProperties(pb);
+		pb.getVectorProp("pos", &pos);
+	}
+	
+	int getNumSamples()
+	{
+		return 1;
+	}
+	
+	void getNthSample(int sampleIdx, const Vector& shadePos,
+							  Vector& samplePos, Color& color)
+	{
+		color = this->color * power;
+		samplePos = pos;
+	}
+};
 
-void genDiscPoint(double maxRadius, double& x, double& y)
-{
-	double angle = randomFloat() * 2 * PI;
-	double radius = randomFloat() * maxRadius;
-	x = cos(angle) * radius;
-	y = sin(angle) * radius;
-}
+class RectLight: public Light {
+	int xSubd, ySubd;
+	Transform T;
+public:
+	void fillProperties(ParsedBlock& pb)
+	{
+		Light::fillProperties(pb);
+		pb.getIntProp("xSubd", &xSubd, 1);
+		pb.getIntProp("ySubd", &ySubd, 1);
+		pb.getTransformProp(T);
+	}
+	
+	int getNumSamples();
+	
+	void getNthSample(int sampleIdx, const Vector& shadePos,
+							  Vector& samplePos, Color& color);
+	
+};
+
+#endif // __LIGHTS_H__
+

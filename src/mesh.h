@@ -77,10 +77,12 @@ class Mesh: public Geometry {
 public:
 	
 	bool faceted;
+	bool backfaceCulling;
 
 	Mesh() {
 		faceted = false;
 		useKDTree = true;
+		backfaceCulling = true;
 		kdroot = NULL;
 	}
 	~Mesh();
@@ -90,6 +92,7 @@ public:
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getBoolProp("faceted", &faceted);
+		pb.getBoolProp("backfaceCulling", &backfaceCulling);
 		char fn[256];
 		if (pb.getFilenameProp("file", fn)) {
 			if (!loadFromOBJ(fn)) {

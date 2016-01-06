@@ -37,6 +37,7 @@ enum ElementType {
 	ELEM_ENVIRONMENT,
 	ELEM_CAMERA,
 	ELEM_SETTINGS,
+	ELEM_LIGHT,
 };
 
 class SceneParser;
@@ -48,6 +49,7 @@ class Texture;
 class Environment;
 class Camera;
 class Bitmap;
+class Light;
 struct Transform;
 
 class ParsedBlock;
@@ -243,8 +245,6 @@ struct GlobalSettings: public SceneElement {
 
 	// Lighting:
 	Color ambientLight;          //!< ambient color
-	Vector lightPos;             //!< default point light position
-	double lightIntensity;       //!< default point light intensity
 	
 	// AA-related:
 	bool wantAA;                 //!< Is Anti-Aliasing on?
@@ -253,6 +253,7 @@ struct GlobalSettings: public SceneElement {
 	int maxTraceDepth;           //!< Maximum recursion depth
 	
 	bool dbg;                    //!< A debugging flag (if on, various raytracing-related procedures will dump debug info to stdout).
+	float saturation; 
 		
 	GlobalSettings();
 	void fillProperties(ParsedBlock& pb);
@@ -265,7 +266,7 @@ struct Scene {
 	std::vector<Node*> nodes;
 	std::vector<Node*> superNodes; // also Nodes, but without a shader attached; don't represent an scene object directly
 	std::vector<Texture*> textures;
-	//std::vector<Light*> lights;
+	std::vector<Light*> lights;
 	Environment* environment;
 	Camera* camera;
 	GlobalSettings settings;

@@ -45,7 +45,7 @@
 #include "mesh.h"
 #include "random_generator.h"
 #include "heightfield.h"
-//#include "lights.h"
+#include "lights.h"
 #include <assert.h>
 using std::vector;
 using std::string;
@@ -530,7 +530,7 @@ bool DefaultSceneParser::parse(const char* filename, Scene* ss)
 				case ELEM_NODE: s->nodes.push_back((Node*)curObj); break;
 				case ELEM_ENVIRONMENT: s->environment = (Environment*) curObj; break;
 				case ELEM_CAMERA: s->camera = (Camera*)curObj; break;
-				//case ELEM_LIGHT: s->lights.push_back((Light*) curObj); break;
+				case ELEM_LIGHT: s->lights.push_back((Light*) curObj); break;
 				default: break;
 			}
 		} else {
@@ -562,7 +562,7 @@ bool DefaultSceneParser::parse(const char* filename, Scene* ss)
 		return false;
 	}
 	const int element_types_order[] = {
-		ELEM_SETTINGS, ELEM_CAMERA, ELEM_ENVIRONMENT, /*ELEM_LIGHT,*/ ELEM_GEOMETRY, ELEM_TEXTURE, ELEM_SHADER, ELEM_NODE, //ELEM_ATMOSPHERIC
+		ELEM_SETTINGS, ELEM_CAMERA, ELEM_ENVIRONMENT, ELEM_LIGHT, ELEM_GEOMETRY, ELEM_TEXTURE, ELEM_SHADER, ELEM_NODE, //ELEM_ATMOSPHERIC
 	};
 	// process all parsed blocks, but first process all singletons, then process geometries first, etc.
 	for (int ei = 0; ei < (int) (sizeof(element_types_order) / sizeof(element_types_order[0])); ei++) {
@@ -769,7 +769,7 @@ Scene::~Scene()
 	disposeArray(superNodes);
 	disposeArray(textures);
 	disposeArray(shaders);
-	//disposeArray(lights);
+	disposeArray(lights);
 	if (environment) delete environment;
 	environment = NULL;
 	if (camera) delete camera;
@@ -789,7 +789,7 @@ void Scene::beginRender()
 	for (auto& element: shaders) element->beginRender();
 	for (auto& element: superNodes) element->beginRender();
 	for (auto& element: nodes) element->beginRender();
-	//for (auto& element: lights) element->beginRender();
+	for (auto& element: lights) element->beginRender();
 	camera->beginRender();
 	settings.beginRender();
 	if (environment) environment->beginRender();
@@ -802,7 +802,7 @@ void Scene::beginFrame()
 	for (auto& element: shaders) element->beginFrame();
 	for (auto& element: superNodes) element->beginFrame();
 	for (auto& element: nodes) element->beginFrame();
-	//for (auto& element: lights) element->beginFrame();
+	for (auto& element: lights) element->beginFrame();
 	camera->beginFrame();
 	settings.beginFrame();
 	if (environment) environment->beginFrame();
@@ -816,6 +816,7 @@ GlobalSettings::GlobalSettings()
 	dbg = false;
 	maxTraceDepth = 4;
 	ambientLight.makeZero();
+	saturation = 0;
 }
 
 void GlobalSettings::fillProperties(ParsedBlock& pb)
@@ -826,9 +827,7 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getIntProp("maxTraceDepth", &maxTraceDepth);
 	pb.getBoolProp("dbg", &dbg);
 	pb.getBoolProp("wantAA", &wantAA);
-	pb.getVectorProp("lightPos", &lightPos);
-	pb.getColorProp("ambientLight", &ambientLight);
-	pb.getDoubleProp("lightIntensity", &lightIntensity);
+	pb.getFloatProp("saturation", &saturation, 0, 1);
 }
 
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)
@@ -856,6 +855,9 @@ SceneElement* DefaultSceneParser::newSceneElement(const char* className)
 	if (!strcmp(className, "Bumps")) return new Bumps;
 	if (!strcmp(className, "Heightfield")) return new Heightfield;
 	if (!strcmp(className, "Const")) return new Const;
+	if (!strcmp(className, "PointLight")) return new PointLight;
+	if (!strcmp(className, "RectLight")) return new RectLight;
+
 	return NULL;
 }
 
