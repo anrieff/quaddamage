@@ -105,9 +105,9 @@ static Vector hemisphereSample(const Vector& normal)
 	double phi   = acos(2 * v - 1);
 	
 	Vector vec(
-		cos(theta) * cos(phi),
-		sin(phi),
-		sin(theta) * cos(phi)
+		cos(theta) * sin(phi),
+		cos(phi),
+		sin(theta) * sin(phi)
 	);
 	
 	if (dot(vec, normal) < 0)
