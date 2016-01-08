@@ -90,8 +90,10 @@ Color Lambert::shade(const Ray& ray, const IntersectionInfo& info)
 Color Lambert::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out)
 {
 	Color diffuse = texture ? texture->sample(x) : this->color;
-
-	return diffuse * (1 / PI);
+	Vector N = faceforward(w_in, x.normal);
+	
+		  /*color*/  /*BRDF*/   /*Kajiya's cosine term*/
+	return diffuse * (1 / PI)     *   dot(w_out, N);
 }
 
 static Vector hemisphereSample(const Vector& normal)
@@ -121,12 +123,13 @@ void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 {
 	out_color = texture ? texture->sample(x) : this->color;
 	
-	out_color *= (1 / PI);
+	w_out = hemisphereSample(x.normal);
 	
-	pdf = 1 / PI;
+	/*color*/    /*BRDF*/   /*Kajiya's cos term*/
+	out_color *= (1 / PI) * dot(w_out, x.normal);
 	
-	Vector normal = x.normal;
-	w_out = hemisphereSample(normal);
+	// 1/2PI since the ray probability is spread over the entire hemisphere:
+	pdf = 1 / (2 * PI);
 }
 
 
