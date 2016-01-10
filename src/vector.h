@@ -185,15 +185,21 @@ inline void orthonormalSystem(const Vector& inRay, Vector& ray1, Vector& ray2)
 	ray2.normalize();
 }
 
+enum {
+	RF_DEBUG = 1,
+	
+	RF_DIFFUSE = 2,
+};
+
 struct Ray {
 	Vector start;
 	Vector dir; //!< normed!
 	int depth;
-	bool debug;
+	int flags;
 	Ray()
 	{
 		depth = 0;
-		debug = false;
+		flags = 0;
 	}
 };
 

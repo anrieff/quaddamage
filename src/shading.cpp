@@ -33,11 +33,11 @@ Color BRDF::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_
 }
 
 void BRDF::spawnRay(const IntersectionInfo& x, const Vector& w_in,
-						Vector& w_out, Color& color, float& pdf)
+						Ray& w_out, Color& color, float& pdf)
 {
-	w_out = Vector(1, 0, 0);
+	w_out.dir = Vector(1, 0, 0);
 	color = Color(1, 0, 0);
-	pdf = 1;
+	pdf = -1;
 }
 
 bool visibilityCheck(const Vector& start, const Vector& end);
@@ -119,14 +119,17 @@ static Vector hemisphereSample(const Vector& normal)
 }
 
 void Lambert::spawnRay(const IntersectionInfo& x, const Vector& w_in,
-						Vector& w_out, Color& out_color, float& pdf)
+						Ray& w_out, Color& out_color, float& pdf)
 {
 	out_color = texture ? texture->sample(x) : this->color;
+	Vector N = faceforward(w_in, x.normal);
 	
-	w_out = hemisphereSample(x.normal);
+	w_out.dir = hemisphereSample(N);
+	w_out.flags |= RF_DIFFUSE;
+	w_out.start = x.ip + N * 1e-6;
 	
 	/*color*/    /*BRDF*/   /*Kajiya's cos term*/
-	out_color *= (1 / PI) * dot(w_out, x.normal);
+	out_color *= (1 / PI) * dot(w_out.dir, N);
 	
 	// 1/2PI since the ray probability is spread over the entire hemisphere:
 	pdf = 1 / (2 * PI);
@@ -245,14 +248,16 @@ Color Refl::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_
 }
 
 void Refl::spawnRay(const IntersectionInfo& x, const Vector& w_in,
-						Vector& w_out, Color& out_color, float& pdf)
+						Ray& w_out, Color& out_color, float& pdf)
 {
 	if (glossiness != 1)
 		return BRDF::spawnRay(x, w_in, w_out, out_color, pdf);
 
 	Vector n = faceforward(w_in, x.normal);
 
-	w_out = reflect(w_in, n);
+	w_out.dir = reflect(w_in, n);
+	w_out.start = x.ip + n * 1e-6;
+	w_out.flags &= ~RF_DIFFUSE;
 	out_color = Color(1, 1, 1) * multiplier;
 	pdf = 1;
 }
@@ -291,7 +296,7 @@ Color Refr::eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_
 }
 
 void Refr::spawnRay(const IntersectionInfo& x, const Vector& w_in,
-						Vector& w_out, Color& out_color, float& pdf)
+						Ray& w_out, Color& out_color, float& pdf)
 {
 	Vector refr;
 	if (dot(w_in, x.normal) < 0) {
@@ -305,7 +310,9 @@ void Refr::spawnRay(const IntersectionInfo& x, const Vector& w_in,
 		pdf = 0;
 		return;
 	}
-	w_out = refr;
+	w_out.dir = refr;
+	w_out.start = x.ip + w_out.dir * 1e-6;
+	w_out.flags &= ~RF_DIFFUSE;
 	out_color = Color(1, 1, 1) * multiplier;
 	pdf = 1;
 }

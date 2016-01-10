@@ -18,6 +18,8 @@ using std::vector;
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 
+bool visibilityCheck(const Vector& start, const Vector& end);
+
 Color raytrace(Ray ray)
 {
 	if (ray.depth > scene.settings.maxTraceDepth) return Color(0, 0, 0);
@@ -50,13 +52,66 @@ Color raytrace(Ray ray)
 		if (scene.environment) return scene.environment->getEnvironment(ray.dir);
 		else return Color(0, 0, 0);
 	} else {
-		if (ray.debug && ray.depth == 0)
+		if ((ray.flags & RF_DEBUG) && ray.depth == 0)
 			printf("Found intersection at %.2lf\n", closestInfo.distance);
 		closestInfo.rayDir = ray.dir;
 		if (closestNode->bump)
 			closestNode->bump->modifyNormal(closestInfo);
 		return closestNode->shader->shade(ray, closestInfo);
 	}
+}
+
+Color explicitLightSample(const Ray& ray, const IntersectionInfo& info, const Color& pathMultiplier, Shader* shader, Random& rnd)
+{
+	// try to end a path by explicitly sampling a light. If there are no lights, we can't do that:
+	if (scene.lights.empty()) return Color(0, 0, 0);
+	
+	// choose a random light:
+	int lightIdx = rnd.randint(0, scene.lights.size() - 1);
+	Light* chosenLight = scene.lights[lightIdx];
+	
+	// evaluate light's solid angle as viewed from the intersection point, x:
+	Vector x = info.ip;
+	double solidAngle = chosenLight->solidAngle(x);
+	
+	// is light is too small or invisible?
+	if (solidAngle == 0) return Color(0, 0, 0);
+	
+	// choose a random point on the light:
+	int samplesInLight = chosenLight->getNumSamples();
+	int randSample = rnd.randint(0, samplesInLight - 1);
+	
+	Vector pointOnLight;
+	Color unused;
+	chosenLight->getNthSample(randSample, x, pointOnLight, unused);
+	
+	// camera -> ... path ... -> x -> lightPos
+	//                       are x and lightPos visible?
+	if (!visibilityCheck(x + info.normal * 1e-6, pointOnLight))
+		return Color(0, 0, 0);
+	
+	// get the emitted light energy (color * power):
+	Color L = chosenLight->getColor();
+	
+	
+	// evaluate BRDF. It might be zero (e.g., pure reflection), so bail out early if that's the case
+	Vector w_out = pointOnLight - x;
+	w_out.normalize();
+	Color brdfAtPoint = shader->eval(info, ray.dir, w_out);
+	if (brdfAtPoint.intensity() == 0) return Color(0, 0, 0);
+	
+	// probability to hit this light's projection on the hemisphere
+	// (conditional probability, since we're specifically aiming for this light):
+	float probHitLightArea = 1.0f / solidAngle;
+	
+	// probability to pick this light out of all N lights:
+	float probPickThisLight = 1.0f / scene.lights.size();
+	
+	// combined probability of this generated w_out ray:
+	float chooseLightProb = probHitLightArea * probPickThisLight;
+	
+	/* Light flux (Li) */ /* BRDFs@path*/  /*last BRDF*/ /*MC probability*/
+	return     L       *   pathMultiplier * brdfAtPoint / chooseLightProb;
 }
 
 Color pathtrace(Ray ray, const Color& pathMultiplier, Random& rnd)
@@ -86,7 +141,11 @@ Color pathtrace(Ray ray, const Color& pathMultiplier, Random& rnd)
 		}
 	}
 	if (hitLight) {
-		return hitLightColor * pathMultiplier;
+		if (!(ray.flags & RF_DIFFUSE)) {
+			// forbid light contributions after a diffuse reflection
+			return hitLightColor * pathMultiplier;
+		} else 
+			return Color(0, 0, 0);
 	}
 
 	// check if we hit the sky:
@@ -94,27 +153,31 @@ Color pathtrace(Ray ray, const Color& pathMultiplier, Random& rnd)
 		if (scene.environment)
 			return scene.environment->getEnvironment(ray.dir) * pathMultiplier;
 		else return Color(0, 0, 0);
-	} 
+	}
 	
 	closestInfo.rayDir = ray.dir;
 	if (closestNode->bump)
 		closestNode->bump->modifyNormal(closestInfo);
 	
-	Vector w_out;
+	// ("sampling the light"):
+	// try to end the current path with explicit sampling of some light
+	Color contribLight = explicitLightSample(ray, closestInfo, pathMultiplier, 
+											closestNode->shader, rnd);
+	// ("sampling the BRDF"):
+	// also try to extend the current path randomly: 
+	Ray w_out = ray;
+	w_out.depth++;
 	Color brdf;
 	float pdf;
 	closestNode->shader->spawnRay(closestInfo, ray.dir, w_out, brdf, pdf);
 	
-	Ray newRay = ray;
-	newRay.depth++;
-	newRay.dir = w_out;
-	newRay.start = closestInfo.ip + w_out * 1e-6;
+	if (pdf == -1) return Color(1, 0, 0); // BRDF not implemented
+	if (pdf == 0) return Color(0, 0, 0);  // BRDF is zero
 	
-	return pathtrace(newRay, pathMultiplier * brdf / pdf, rnd);
 	
-	//return closestNode->shader->shade(ray, closestInfo);
+	Color contribGI = pathtrace(w_out, pathMultiplier * brdf / pdf, rnd);
+	return contribLight + contribGI;	
 }
-
 
 bool visibilityCheck(const Vector& start, const Vector& end)
 {
@@ -139,7 +202,7 @@ bool visibilityCheck(const Vector& start, const Vector& end)
 void debugRayTrace(int x, int y)
 {
 	Ray ray = scene.camera->getScreenRay(x, y);
-	ray.debug = true;
+	ray.flags |= RF_DEBUG;
 	raytrace(ray);
 }
 
@@ -210,9 +273,11 @@ Color renderGIPixel(int x, int y)
 	Color sum(0, 0, 0);
 	int N = scene.settings.numPaths;
 	
-	Ray ray = scene.camera->getScreenRay(x, y);
 	Random rnd = getRandomGen();
 	for (int i = 0; i < N; i++) {
+		Ray ray = scene.camera->getScreenRay(
+			x + rnd.randdouble(), y + rnd.randdouble()
+		);
 		sum += pathtrace(ray, Color(1, 1, 1), rnd); 
 	}
 	
@@ -254,7 +319,7 @@ void render()
 			}
 		}
 	}
-	
+
 	for (Rect& r: buckets) {
 		for (int y = r.y0; y < r.y1; y++)
 			for (int x = r.x0; x < r.x1; x++) {

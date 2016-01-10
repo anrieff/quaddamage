@@ -34,7 +34,7 @@ public:
 	virtual Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
 	
 	virtual void spawnRay(const IntersectionInfo& x, const Vector& w_in,
-							Vector& w_out, Color& color, float& pdf);
+							Ray& w_out, Color& color, float& pdf);
 };
 
 class Shader: public SceneElement, public BRDF {
@@ -122,7 +122,7 @@ public:
 	Color shade(const Ray& ray, const IntersectionInfo& info);
 	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
 	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
-							Vector& w_out, Color& color, float& pdf);
+							Ray& w_out, Color& color, float& pdf);
 	
 	void fillProperties(ParsedBlock& pb)
 	{
@@ -162,7 +162,7 @@ public:
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
 	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
 	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
-							Vector& w_out, Color& color, float& pdf);
+							Ray& w_out, Color& color, float& pdf);
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("multiplier", &multiplier);
@@ -180,7 +180,7 @@ public:
 	Color shade(const Ray& ray, const IntersectionInfo& info);	
 	Color eval(const IntersectionInfo& x, const Vector& w_in, const Vector& w_out);
 	void spawnRay(const IntersectionInfo& x, const Vector& w_in,
-							Vector& w_out, Color& color, float& pdf);
+							Ray& w_out, Color& color, float& pdf);
 	void fillProperties(ParsedBlock& pb)
 	{
 		pb.getDoubleProp("multiplier", &multiplier);
