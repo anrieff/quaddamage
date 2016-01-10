@@ -52,6 +52,16 @@ void Mesh::beginRender()
 		printf(" -> KDTree built in %.2lfs, avg depth = %.1lf\n", (endBuild - startBuild) / 1000.0, maxDepthSum / double(numNodes));
 	}
 	
+	if (normals.size() <= 1 && autoSmooth) {
+		normals.resize(vertices.size(), Vector(0, 0, 0)); // extend the normals[] array, and fill with zeros
+		for (int i = 0; i < (int) triangles.size(); i++)
+			for (int j = 0; j < 3; j++) {
+				triangles[i].n[j] = triangles[i].v[j];
+				normals[triangles[i].n[j]] += triangles[i].gnormal;
+			}
+		for (int i = 1; i < (int) normals.size(); i++)
+			if (normals[i].lengthSqr() > 1e-9) normals[i].normalize();
+	}
 	// if the object is set to be smooth-shaded, but it lacks normals, we have to revert it to "faceted":
 	if (normals.size() <= 1) faceted = true;
 }

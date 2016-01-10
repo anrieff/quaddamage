@@ -51,8 +51,8 @@ Mesh teapot {
 }
 
 Mesh heart {
-	faceted			true
 	file			"geom/heart.obj"
+	autoSmooth      true // the OBJ file lacks normals, we have to generate them
 }
 
 Mesh dice {

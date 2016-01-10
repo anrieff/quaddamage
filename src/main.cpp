@@ -189,7 +189,7 @@ int renderSceneThread(void* /*unused*/)
 	return 0;
 }
 
-const char* DEFAULT_SCENE = "data/meshes.qdmg";
+const char* DEFAULT_SCENE = "data/boxed.qdmg";
 
 int main ( int argc, char** argv )
 {

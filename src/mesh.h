@@ -67,6 +67,7 @@ class Mesh: public Geometry {
 	
 	KDTreeNode* kdroot;
 	bool useKDTree;
+	bool autoSmooth;
 	int maxDepthSum;
 	int numNodes;
 
@@ -83,6 +84,7 @@ public:
 		faceted = false;
 		useKDTree = true;
 		backfaceCulling = true;
+		autoSmooth = false;
 		kdroot = NULL;
 	}
 	~Mesh();
@@ -103,6 +105,7 @@ public:
 			pb.requiredProp("file");
 		}
 		pb.getBoolProp("useKDTree", &useKDTree);
+		pb.getBoolProp("autoSmooth", &autoSmooth);
 	}
 	
 	void beginRender();
