@@ -89,6 +89,7 @@
     <ClCompile Include="src\environment.cpp" />
     <ClCompile Include="src\geometry.cpp" />
     <ClCompile Include="src\heightfield.cpp" />
+    <ClCompile Include="src\lights.cpp" />
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\matrix.cpp" />
     <ClCompile Include="src\mesh.cpp" />
@@ -107,6 +108,7 @@
     <ClInclude Include="src\environment.h" />
     <ClInclude Include="src\geometry.h" />
     <ClInclude Include="src\heightfield.h" />
+    <ClInclude Include="src\lights.h" />
     <ClInclude Include="src\matrix.h" />
     <ClInclude Include="src\mesh.h" />
     <ClInclude Include="src\random_generator.h" />
