@@ -367,7 +367,7 @@ void ThreadPool::wait(void)
 
 void ThreadPool::preload_threads(int count)
 {
-	if (active_count < count)
+	if (count > 1 && active_count < count)
 		run(NULL, count);
 }
 
