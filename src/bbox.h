@@ -37,6 +37,7 @@ struct Triangle {
 	int n[3]; //!< holds indices to the three normals of the triangle (indexes in the `normals' array)
 	int t[3]; //!< holds indices to the three texture coordinates of the triangle (indexes in the `uvs' array)
 	Vector gnormal; //!< The geometric normal of the mesh (AB ^ AC, normalized)
+	Vector AB, AC, ABcrossAC; //!< precomputed AB, AC and AB^AC
 	Vector dNdx, dNdy;
 };
 // the C vertex of triangle with index 5 is:

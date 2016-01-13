@@ -166,24 +166,24 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 {
 	if (backfaceCulling && dot(ray.dir, t.gnormal) > 0) return false;
 	Vector A = vertices[t.v[0]];
-	Vector B = vertices[t.v[1]];
-	Vector C = vertices[t.v[2]];
 	
 	Vector H = ray.start - A;
 	Vector D = ray.dir;
 	
-	double Dcr = det(B-A, C-A, -D);
+	double Dcr = - (t.ABcrossAC * D);
 
 	if (fabs(Dcr) < 1e-12) return false;
 
-	double gamma = det(B-A, C-A, H) / Dcr;
+	double rDcr = 1 / Dcr;
+	double gamma = (t.ABcrossAC * H) * rDcr;
 	if (gamma < 0 || gamma > info.distance) return false;
 	
-	double lambda2 = det(H, C-A, -D) / Dcr;
-	double lambda3 = det(B-A, H, -D) / Dcr;
+	double lambda2 = det(H, t.AC, -D) * rDcr;
+	if (lambda2 < 0 || lambda2 > 1) return false;
 	
-	if (lambda2 < 0 || lambda3 < 0) return false;
-	if (lambda2 > 1 || lambda3 > 1) return false;
+	double lambda3 = det(t.AB, H, -D) * rDcr;
+	if (lambda3 < 0 || lambda3 > 1) return false;
+	
 	if (lambda2 + lambda3 > 1) return false;
 		
 	info.distance = gamma;
@@ -382,7 +382,9 @@ bool Mesh::loadFromOBJ(const char* filename)
 		Vector C = vertices[t.v[2]];
 		Vector AB = B - A;
 		Vector AC = C - A;
-		t.gnormal = AB ^ AC;
+		t.AB = AB;
+		t.AC = AC;
+		t.gnormal = t.ABcrossAC = AB ^ AC;
 		t.gnormal.normalize();
 		
 		// (1, 0) = px * texAB + qx * texAC; (1)
