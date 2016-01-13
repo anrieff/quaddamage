@@ -20,7 +20,7 @@ Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 
 bool visibilityCheck(const Vector& start, const Vector& end);
 
-Color raytrace(Ray ray)
+Color raytrace(const Ray& ray)
 {
 	if (ray.depth > scene.settings.maxTraceDepth) return Color(0, 0, 0);
 	Node* closestNode = NULL;

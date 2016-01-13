@@ -199,7 +199,7 @@ Color BitmapTexture::sample(const IntersectionInfo& info)
 	return bitmap->getFilteredPixel(x, y);
 }
 
-extern Color raytrace(Ray ray);
+extern Color raytrace(const Ray& ray);
 
 Color Refl::shade(const Ray& ray, const IntersectionInfo& info)
 {
