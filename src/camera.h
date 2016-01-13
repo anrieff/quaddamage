@@ -93,6 +93,10 @@ public:
 	
 	Ray getScreenRay(double xScreen, double yScreen, int whichCamera = CAMERA_CENTRAL);
 	Ray getDOFRay(double xScreen, double yScreen, int whichCamera = CAMERA_CENTRAL);
+	
+	void move(double sideways, double front_back);
+	void rotate(double yawDiff, double pitchDiff);
+
 };
 
 #endif // __CAMERA_H__

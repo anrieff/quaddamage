@@ -1,4 +1,5 @@
 #include <SDL/SDL.h>
+#include <SDL/SDL_events.h>
 #include <math.h>
 #include <vector>
 #include "vector.h"
@@ -13,12 +14,15 @@
 #include "random_generator.h"
 #include "scene.h"
 #include "lights.h"
+#include "cxxptl_sdl.h"
+
 using std::vector;
 
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
 
 bool visibilityCheck(const Vector& start, const Vector& end);
+ThreadPool pool;
 
 Color raytrace(const Ray& ray)
 {
@@ -299,12 +303,33 @@ Color renderPixel(int x, int y)
 	}
 }
 
+class MTRend: public Parallel {
+	const vector<Rect>& buckets;
+	InterlockedInt counter;
+public:
+	
+	MTRend(const vector<Rect>& buckets): buckets(buckets), counter(0) {}
+
+	void entry(int threadIdx, int threadCount)
+	{
+		int i;
+		while ((i = counter++) < int(buckets.size())) {
+			const Rect& r = buckets[i];
+			for (int y = r.y0; y < r.y1; y++)
+				for (int x = r.x0; x < r.x1; x++) {
+					vfb[y][x] = renderPixel(x, y);
+				}
+			if (!scene.settings.interactive && !displayVFBRect(r, vfb)) return;
+		}
+	}
+};
+
 void render()
 {
 	scene.beginFrame();
 	vector<Rect> buckets = getBucketsList();
 	
-	if (scene.settings.wantPrepass || scene.settings.gi) {
+	if (!scene.settings.interactive && (scene.settings.wantPrepass || scene.settings.gi)) {
 		// We render the whole screen in three passes.
 		// 1) First pass - use very coarse resolution rendering, tracing a single ray for a 16x16 block:
 		for (Rect& r: buckets) {
@@ -319,14 +344,11 @@ void render()
 			}
 		}
 	}
+	
+	MTRend mtrend(buckets);
+	
+	pool.run(&mtrend, scene.settings.numThreads);
 
-	for (Rect& r: buckets) {
-		for (int y = r.y0; y < r.y1; y++)
-			for (int x = r.x0; x < r.x1; x++) {
-				vfb[y][x] = renderPixel(x, y);
-			}
-		if (!displayVFBRect(r, vfb)) return;
-	}
 }
 
 int renderSceneThread(void* /*unused*/)
@@ -334,6 +356,57 @@ int renderSceneThread(void* /*unused*/)
 	render();
 	rendering = false;
 	return 0;
+}
+
+void mainloop(void)
+{
+	SDL_ShowCursor(0);
+	bool running = true;
+	Camera& cam = *scene.camera;
+	const double movement = 2;
+	const double rotation = 5;
+	const double SENSITIVITY = 0.1;
+	
+	while (running) {
+		render();
+		displayVFB(vfb);
+		// 
+		SDL_Event ev;
+		
+		while (SDL_PollEvent(&ev)) {
+			switch (ev.type) {
+				case SDL_QUIT:
+					running = false;
+					break;
+				case SDL_KEYDOWN:
+				{
+					switch (ev.key.keysym.sym) {
+						case SDLK_ESCAPE:
+							running = false;
+							break;
+						default:
+							break;
+					}
+					break;
+				}
+			}
+		}
+		
+		Uint8* keystate = SDL_GetKeyState(NULL);
+		if (keystate[SDLK_UP]) cam.move(0, +movement);
+		if (keystate[SDLK_DOWN]) cam.move(0, -movement);
+		if (keystate[SDLK_LEFT]) cam.move(-movement, 0);
+		if (keystate[SDLK_RIGHT]) cam.move(+movement, 0);
+
+		if (keystate[SDLK_KP8]) cam.rotate(0, +rotation);
+		if (keystate[SDLK_KP2]) cam.rotate(0, -rotation);
+		if (keystate[SDLK_KP4]) cam.rotate(+rotation, 0);
+		if (keystate[SDLK_KP6]) cam.rotate(-rotation, 0);
+		
+		int deltax, deltay;
+		SDL_GetRelativeMouseState(&deltax, &deltay);
+		cam.rotate(-SENSITIVITY * deltax, -SENSITIVITY*deltay);
+	}
 }
 
 const char* DEFAULT_SCENE = "data/smallpt.qdmg";
@@ -348,20 +421,30 @@ int main ( int argc, char** argv )
 		return -1;
 	}
 	
-	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight);
+	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight, scene.settings.interactive);
 	setWindowCaption("Quad Damage: preparing...");
+	
+	if (scene.settings.numThreads == 0)
+		scene.settings.numThreads = get_processor_count();
+	
+	pool.preload_threads(scene.settings.numThreads);
 	
 	scene.beginRender();
 	
-	setWindowCaption("Quad Damage: rendering...");
-	Uint32 startTicks = SDL_GetTicks();
-	renderScene_threaded();
-	Uint32 elapsedMs = SDL_GetTicks() - startTicks;
-	printf("Render took %.2fs\n", elapsedMs / 1000.0f);
-	setWindowCaption("Quad Damage: rendered in %.2fs\n", elapsedMs / 1000.0f);
-	
-	displayVFB(vfb);
-	waitForUserExit();
+	if (scene.settings.interactive) {
+		mainloop();
+	} else {
+		
+		setWindowCaption("Quad Damage: rendering...");
+		Uint32 startTicks = SDL_GetTicks();
+		renderScene_threaded();
+		Uint32 elapsedMs = SDL_GetTicks() - startTicks;
+		printf("Render took %.2fs\n", elapsedMs / 1000.0f);
+		setWindowCaption("Quad Damage: rendered in %.2fs\n", elapsedMs / 1000.0f);
+		
+		displayVFB(vfb);
+		waitForUserExit();
+	}
 	closeGraphics();
 	printf("Exited cleanly\n");
 	return 0;

@@ -30,6 +30,7 @@
 #include "scene.h"
 #include "random_generator.h"
 using std::min;
+using std::max;
 
 void Camera::beginFrame()
 {	
@@ -111,4 +112,17 @@ Ray Camera::getDOFRay(double xScreen, double yScreen, int whichCamera)
 	ray.dir = target - ray.start;
 	ray.dir.normalize();
 	return ray;
+}
+
+void Camera::move(double sideways, double front_back)
+{
+	position += rightDir * sideways + frontDir * front_back;
+}
+
+void Camera::rotate(double yawDiff, double pitchDiff)
+{
+	yaw += yawDiff;
+	pitch += pitchDiff;
+	pitch = min(90.0, pitch);
+	pitch = max(-90.0, pitch);
 }
