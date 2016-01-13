@@ -162,7 +162,7 @@ bool intersectTriangleFast(const Ray& ray, const Vector& A, const Vector& B, con
 	return true;
 }
 
-bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info)
+bool Mesh::intersectTriangle(const RRay& ray, const Triangle& t, IntersectionInfo& info)
 {
 	if (backfaceCulling && dot(ray.dir, t.gnormal) > 0) return false;
 	Vector A = vertices[t.v[0]];
@@ -214,7 +214,7 @@ bool Mesh::intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo
 	return true;
 }
 
-bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, IntersectionInfo& info)
+bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const RRay& ray, IntersectionInfo& info)
 {
 	if (node->axis == AXIS_NONE) {
 		bool found = false;
@@ -254,8 +254,10 @@ bool Mesh::intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, Inter
 	}
 }
 
-bool Mesh::intersect(const Ray& ray, IntersectionInfo& info)
+bool Mesh::intersect(const Ray& _ray, IntersectionInfo& info)
 {
+	RRay ray(_ray);
+	ray.prepareForTracing();
 	if (!bbox.testIntersect(ray))
 		return false;
 	

@@ -72,9 +72,9 @@ class Mesh: public Geometry {
 	int numNodes;
 
 	void computeBoundingGeometry();
-	bool intersectTriangle(const Ray& ray, const Triangle& t, IntersectionInfo& info);
+	bool intersectTriangle(const RRay& ray, const Triangle& t, IntersectionInfo& info);
 	void buildKD(KDTreeNode* node, BBox bbox, const std::vector<int>& triangleList, int depth);
-	bool intersectKD(KDTreeNode* node, const BBox& bbox, const Ray& ray, IntersectionInfo& info);
+	bool intersectKD(KDTreeNode* node, const BBox& bbox, const RRay& ray, IntersectionInfo& info);
 public:
 	
 	bool faceted;

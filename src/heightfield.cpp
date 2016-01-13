@@ -119,8 +119,10 @@ Vector Heightfield::getNormal(float x, float y) const
 	return v;
 }
 
-bool Heightfield::intersect(const Ray& ray, IntersectionInfo& info)
+bool Heightfield::intersect(const Ray& _ray, IntersectionInfo& info)
 {
+	RRay ray(_ray);
+	ray.prepareForTracing();
 	Vector step = ray.dir;
 	double distHoriz = sqrt(sqr(step.x) + sqr(step.z));
 	step /= distHoriz;
