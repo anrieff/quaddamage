@@ -178,10 +178,11 @@ bool Mesh::intersectTriangle(const RRay& ray, const Triangle& t, IntersectionInf
 	double gamma = (t.ABcrossAC * H) * rDcr;
 	if (gamma < 0 || gamma > info.distance) return false;
 	
-	double lambda2 = det(H, t.AC, -D) * rDcr;
+	Vector HcrossD = H^D;
+	double lambda2 = (HcrossD * t.AC) * rDcr;
 	if (lambda2 < 0 || lambda2 > 1) return false;
 	
-	double lambda3 = det(t.AB, H, -D) * rDcr;
+	double lambda3 = -(t.AB * HcrossD) * rDcr;
 	if (lambda3 < 0 || lambda3 > 1) return false;
 	
 	if (lambda2 + lambda3 > 1) return false;
