@@ -380,21 +380,23 @@ Color Layered::shade(const Ray& ray, const IntersectionInfo& info)
 	return result;
 }
 
-inline double fresnel(const Vector& i, const Vector& n, double ior)
+inline float fresnel(float NdotI, float ior)
 {
 	// Schlick's approximation
-	double f = sqr((1.0f - ior) / (1.0f + ior));
-	double NdotI = (double) -dot(n, i);
-	return f + (1.0f - f) * pow(1.0f - NdotI, 5.0f);
+	float f = sqr((1.0f - ior) / (1.0f + ior));
+	float x = 1.0f - NdotI;
+	return f + (1.0f - f) * (x * x * x * x * x);
 }
 
 Color Fresnel::sample(const IntersectionInfo& info)
 {
-	double eta = ior;
-	if (dot(info.normal, info.rayDir) > 0)
-		eta = 1 / eta;
-	Vector n = faceforward(info.rayDir, info.normal);
-	double fr = fresnel(info.rayDir, n, eta);
+	float eta = ior;
+	float NdotI = dot(info.normal, info.rayDir);
+	if (NdotI > 0)
+		eta = 1.0f / eta;
+	else
+		NdotI = -NdotI;
+	float fr = fresnel(NdotI, eta);
 	return Color(fr, fr, fr);
 }
 
