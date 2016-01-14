@@ -363,13 +363,16 @@ void mainloop(void)
 	SDL_ShowCursor(0);
 	bool running = true;
 	Camera& cam = *scene.camera;
-	const double movement = 2;
-	const double rotation = 5;
+	const double MOVEMENT_PER_SEC = 20;
+	const double ROTATION_PER_SEC = 50;
 	const double SENSITIVITY = 0.1;
 	
 	while (running) {
+		Uint32 ticksSaved = SDL_GetTicks();
 		render();
 		displayVFB(vfb);
+		// timeDelta is how much time the frame took to render:
+		double timeDelta = (SDL_GetTicks() - ticksSaved) / 1000.0;
 		// 
 		SDL_Event ev;
 		
@@ -393,6 +396,8 @@ void mainloop(void)
 		}
 		
 		Uint8* keystate = SDL_GetKeyState(NULL);
+		double movement = MOVEMENT_PER_SEC * timeDelta;
+		double rotation = ROTATION_PER_SEC * timeDelta;
 		if (keystate[SDLK_UP]) cam.move(0, +movement);
 		if (keystate[SDLK_DOWN]) cam.move(0, -movement);
 		if (keystate[SDLK_LEFT]) cam.move(-movement, 0);
@@ -421,7 +426,8 @@ int main ( int argc, char** argv )
 		return -1;
 	}
 	
-	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight, scene.settings.interactive);
+	initGraphics(scene.settings.frameWidth, scene.settings.frameHeight,
+		scene.settings.interactive && scene.settings.fullscreen);
 	setWindowCaption("Quad Damage: preparing...");
 	
 	if (scene.settings.numThreads == 0)

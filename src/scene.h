@@ -260,6 +260,7 @@ struct GlobalSettings: public SceneElement {
 	
 	int numThreads;              //!< # of threads for rendering; 0 = autodetect. 1 = single-threaded
 	bool interactive;            //!< interactive render
+	bool fullscreen;             //!< whether we should switch to fullscreen in interactive mode
 		
 	GlobalSettings();
 	void fillProperties(ParsedBlock& pb);
