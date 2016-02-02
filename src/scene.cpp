@@ -841,6 +841,11 @@ void GlobalSettings::fillProperties(ParsedBlock& pb)
 	pb.getBoolProp("fullscreen", &fullscreen);
 }
 
+bool GlobalSettings::needAApass()
+{
+	return wantAA && !interactive && !scene.camera->dof && !scene.settings.gi;
+}
+
 SceneElement* DefaultSceneParser::newSceneElement(const char* className)
 {
 	if (!strcmp(className, "GlobalSettings")) return &s->settings;

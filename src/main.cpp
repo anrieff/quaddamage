@@ -20,6 +20,7 @@ using std::vector;
 
 
 Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE];
+bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE];
 
 bool visibilityCheck(const Vector& start, const Vector& end);
 ThreadPool pool;
@@ -247,21 +248,6 @@ Color raytraceSinglePixel(double x, double y)
 	}
 }
 
-Color renderAAPixel(int x, int y)
-{
-	const double kernel[5][2] = {
-		{ 0.0, 0.0 },
-		{ 0.6, 0.0 },
-		{ 0.0, 0.6 },
-		{ 0.3, 0.3 },
-		{ 0.6, 0.6 },
-	};
-	Color sum(0, 0, 0);
-	for (int i = 0; i < COUNT_OF(kernel); i++)
-		sum += raytraceSinglePixel(x + kernel[i][0], y + kernel[i][1]);
-	return sum / double(COUNT_OF(kernel));
-}
-
 Color renderDOFPixel(int x, int y)
 {
 	Random& rnd = getRandomGen();
@@ -295,29 +281,113 @@ Color renderPixel(int x, int y)
 	} else if (scene.settings.gi) {
 		return renderGIPixel(x, y);
 	} else {
-		if (scene.settings.wantAA) {
-			return renderAAPixel(x, y);
-		} else {
-			return raytraceSinglePixel(x, y);
-		}
+		return raytraceSinglePixel(x, y);
 	}
 }
 
-class MTRend: public Parallel {
+static void detectAApixels(const vector<Rect>& buckets)
+{
+	const int neighbours[8][2] = {
+		{ -1, -1 }, { 0, -1 }, { 1, -1 },
+		{ -1,  0 },            { 1,  0 },
+		{ -1,  1 }, { 0,  1 }, { 1,  1 }
+	};
+	int W = frameWidth(), H = frameHeight();
+	const float AA_THRESH = 0.1f;
+	for (auto& r: buckets) {
+		for (int y = r.y0; y < r.y1; y++)
+			for (int x = r.x0; x < r.x1; x++) {
+				needsAA[y][x] = false;
+				const Color& me = vfb[y][x];
+				for (int ni = 0; ni < COUNT_OF(neighbours); ni++) {
+					int neighX = x + neighbours[ni][0];
+					int neighY = y + neighbours[ni][1];
+					if (neighX < 0 || neighX >= W || neighY < 0 || neighY >= H) continue;
+					const Color& neighbour = vfb[neighY][neighX];
+					for (int channel = 0; channel < 3; channel++) {
+						if (fabs(min(1.0f, me[channel]) - min(1.0f, neighbour[channel])) > AA_THRESH) {
+							needsAA[y][x] = true;
+							break;
+						}
+					}
+					if (needsAA[y][x]) break;
+				}
+			}
+	}
+	markAApixels(needsAA);
+}
+
+class RenderScreenTask: public Parallel {
+protected:
 	const vector<Rect>& buckets;
 	InterlockedInt counter;
 public:
-	
-	MTRend(const vector<Rect>& buckets): buckets(buckets), counter(0) {}
+	RenderScreenTask(const vector<Rect>& buckets): buckets(buckets), counter(0) {}
+};
 
+// Main rendering task. For scenes, that have implicit AA (with DOF or GI), this
+// is all that is needed. If explicit AA is needed, this task is just a prepass
+// that renders the base screen (1-sample-per-pixel).
+struct MainRenderTask: public RenderScreenTask {
+	bool finalPass;
+	MainRenderTask(const vector<Rect>& buckets): RenderScreenTask(buckets)
+	{
+		finalPass = !scene.settings.needAApass();
+	}
+	
 	void entry(int threadIdx, int threadCount)
 	{
 		int i;
 		while ((i = counter++) < int(buckets.size())) {
 			const Rect& r = buckets[i];
+			if (!scene.settings.interactive && finalPass && !markRegion(r)) return;
 			for (int y = r.y0; y < r.y1; y++)
 				for (int x = r.x0; x < r.x1; x++) {
 					vfb[y][x] = renderPixel(x, y);
+				}
+			if (!scene.settings.interactive && !displayVFBRect(r, vfb)) return;
+		}
+	}
+};
+
+// If explicit AA is needed, this task refines the image around sharp edges
+// (as detected by detectAApixels()).
+struct RefineRenderTask: public RenderScreenTask {
+	RefineRenderTask(const vector<Rect>& buckets): RenderScreenTask(buckets) {}
+	
+	void entry(int threadIdx, int threadCount)
+	{
+		const double kernel[5][2] = {
+			// note that this sample is already rendered in vfb[][]:
+			{ 0.0, 0.0 }, 
+			
+			// refinement adds these samples:
+			{ 0.6, 0.0 },
+			{ 0.0, 0.6 },
+			{ 0.3, 0.3 },
+			{ 0.6, 0.6 },
+		};
+		int i;
+		while ((i = counter++) < int(buckets.size())) {
+			const Rect& r = buckets[i];
+			// see if the bucket contains anything interesting at all:
+			bool skipBucket = true;
+			for (int y = r.y0; y < r.y1 && skipBucket; y++)
+				for (int x = r.x0; x < r.x1; x++) 
+					if (needsAA[y][x]) {
+						skipBucket = false;
+						break;
+					}
+			if (skipBucket) continue;
+			
+			if (!markRegion(r)) return;
+			for (int y = r.y0; y < r.y1; y++)
+				for (int x = r.x0; x < r.x1; x++) {
+					if (!needsAA[y][x]) continue;
+					Color& sum = vfb[y][x];
+					for (int j = 1; j < COUNT_OF(kernel); j++)
+						sum += raytraceSinglePixel(x + kernel[j][0], y + kernel[j][1]);
+					sum /= COUNT_OF(kernel);
 				}
 			if (!scene.settings.interactive && !displayVFBRect(r, vfb)) return;
 		}
@@ -344,11 +414,18 @@ void render()
 			}
 		}
 	}
-	
-	MTRend mtrend(buckets);
-	
-	pool.run(&mtrend, scene.settings.numThreads);
 
+	MainRenderTask mtrend(buckets);
+	pool.run(&mtrend, scene.settings.numThreads);
+	
+	if (scene.settings.needAApass()) {
+		// the previous render was without any anti-aliasing whatsoever, and the 
+		// scene file specifies that AA is desired. Detect edges here, and refine in another pass:
+		detectAApixels(buckets);
+		
+		RefineRenderTask refineTask(buckets);
+		pool.run(&refineTask, scene.settings.numThreads);
+	}
 }
 
 int renderSceneThread(void* /*unused*/)

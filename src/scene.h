@@ -265,6 +265,8 @@ struct GlobalSettings: public SceneElement {
 	GlobalSettings();
 	void fillProperties(ParsedBlock& pb);
 	ElementType getElementType() const { return ELEM_SETTINGS; }
+
+	bool needAApass();
 };
 
 struct Scene {

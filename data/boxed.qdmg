@@ -3,7 +3,7 @@ GlobalSettings {
 	frameHeight         768
 	ambientLight        (0.075, 0.075, 0.075)
 	maxTraceDepth 8
-	wantAA false
+	wantAA true
 }
 
 Camera camera {
