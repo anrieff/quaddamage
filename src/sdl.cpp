@@ -50,12 +50,15 @@ bool initGraphics(int frameWidth, int frameHeight, bool fullscreen)
 		printf("Cannot set video mode %dx%d - %s\n", frameWidth, frameHeight, SDL_GetError());
 		return false;
 	}
+	render_lock = SDL_CreateMutex();
 	return true;
 }
 
 /// closes SDL graphics
 void closeGraphics(void)
 {
+	SDL_FreeSurface(screen);
+	SDL_DestroyMutex(render_lock);
 	SDL_Quit();
 }
 
@@ -69,6 +72,18 @@ void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE])
 		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
 		for (int x = 0; x < screen->w; x++)
 			row[x] = vfb[y][x].toRGB32(rs, gs, bs);
+	}
+	SDL_Flip(screen);
+}
+
+/// displays pixels, set to true in the given array in yellow on the screen
+void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE])
+{
+	Uint32 YELLOW = Color(1, 1, 0).toRGB32(screen->format->Rshift, screen->format->Gshift, screen->format->Bshift);
+	for (int y = 0; y < screen->h; y++) {
+		Uint32 *row = (Uint32*) ((Uint8*) screen->pixels + y * screen->pitch);
+		for (int x = 0; x < screen->w; x++)
+			if (needsAA[y][x]) row[x] = YELLOW;
 	}
 	SDL_Flip(screen);
 }

@@ -33,6 +33,7 @@ extern volatile bool rendering; // used in main/worker thread synchronization
 bool initGraphics(int frameWidth, int frameHeight, bool fullscreen = false);
 void closeGraphics(void);
 void displayVFB(Color vfb[VFB_MAX_SIZE][VFB_MAX_SIZE]); //!< displays the VFB (Virtual framebuffer) to the real one.
+void markAApixels(bool needsAA[VFB_MAX_SIZE][VFB_MAX_SIZE]); //!< displays pixels, that need AA.
 void waitForUserExit(void); //!< Pause. Wait until the user closes the application
 int frameWidth(void); //!< returns the frame width (pixels)
 int frameHeight(void); //!< returns the frame height (pixels)
